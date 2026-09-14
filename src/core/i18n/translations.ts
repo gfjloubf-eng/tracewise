@@ -362,6 +362,18 @@ export const ar: Dict = {
   'memory.trustedFix': 'حل موثّق — يمكن الاعتماد عليه',
   'memory.untrustedFix': 'غير موثّق — للاسترشاد فقط',
 
+  // مسودة مشكلة جديدة
+  'draft.save': '💾 حفظ المسودة',
+  'draft.saving': 'جاري الحفظ…',
+  'draft.saved': 'تم حفظ المسودة ✓',
+  'draft.lastSaved': 'آخر حفظ: منذ {time}',
+  'draft.justNow': 'لحظات',
+  'draft.minAgo': '{n} دقيقة',
+  'draft.hourAgo': '{n} ساعة',
+  'draft.restored': 'تم استعادة مسودة محفوظة — استكمل من حيث توقفت.',
+  'draft.startNew': 'بدء مشكلة جديدة',
+  'draft.discardConfirm': 'بدء مشكلة جديدة؟ سيتم مسح المسودة الحالية نهائيًا.',
+
   'severity.low': 'منخفضة',
   'severity.medium': 'متوسطة',
   'severity.high': 'عالية',
@@ -707,6 +719,18 @@ export const en: Dict = {
   'memory.similarFound': 'Similar problems from memory',
   'memory.trustedFix': 'Verified fix — trustworthy',
   'memory.untrustedFix': 'Unverified — reference only',
+
+  // New-case draft
+  'draft.save': '💾 Save Draft',
+  'draft.saving': 'Saving…',
+  'draft.saved': 'Draft saved ✓',
+  'draft.lastSaved': 'Last saved: {time} ago',
+  'draft.justNow': 'just now',
+  'draft.minAgo': '{n} min',
+  'draft.hourAgo': '{n} h',
+  'draft.restored': 'Saved draft restored — continue where you left off.',
+  'draft.startNew': 'Start new problem',
+  'draft.discardConfirm': 'Start a new problem? The current draft will be permanently cleared.',
 
   'severity.low': 'Low',
   'severity.medium': 'Medium',

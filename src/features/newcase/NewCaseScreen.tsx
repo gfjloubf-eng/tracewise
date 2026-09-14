@@ -1,6 +1,6 @@
-/** مشكلة جديدة — إدخال تدريجي (Wizard) مناسب للهاتف: 4 خطوات */
-import React, { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+/** مشكلة جديدة — إدخال تدريجي (Wizard) مناسب للهاتف: 4 خطوات + نظام مسودات كامل */
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
 import { Btn, Card, Chip, Field, KeyValue, SectionTitle, SeverityBadge } from '../../ui/components';
@@ -9,6 +9,7 @@ import { useStore } from '../../state/AppStore';
 import { assessSeverity } from '../../domain/severity';
 import { buildFingerprint } from '../../domain/fingerprint';
 import { CaseInput } from '../../domain/types';
+import { deleteNewCaseDraft, draftHasContent, loadNewCaseDraft, saveNewCaseDraft } from '../../state/draftStore';
 
 const LANGUAGES = ['TypeScript', 'JavaScript', 'Dart', 'Python', 'Java', 'Kotlin', 'Go', 'C#', 'PHP', 'Ruby', 'Rust', 'Swift', 'C/C++', 'SQL'];
 const FRAMEWORKS = ['React Native', 'Flutter', 'React', 'Vue', 'Angular', 'Node.js', 'Django', 'FastAPI', 'Spring', 'Laravel', 'Rails', 'ASP.NET', 'Express', 'Next.js'];
@@ -34,6 +35,105 @@ export function NewCaseScreen({
   const [form, setForm] = useState<CaseInput>({ title: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // ——— نظام المسودات ———
+  const hydratedRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittedRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+
+  // استعادة المسودة عند الفتح — مرة واحدة
+  useEffect(() => {
+    let mounted = true;
+    loadNewCaseDraft().then((d) => {
+      if (!mounted) return;
+      if (d) {
+        const { projectId: pid, step: st, updatedAt, ...rest } = d;
+        setForm(rest as CaseInput);
+        setProjectId(pid);
+        setStep(st);
+        setLastSavedAt(updatedAt);
+        setRestored(true);
+      }
+      hydratedRef.current = true;
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // حفظ تلقائي ذكي — debounce بعد التوقف عن الكتابة، وبمحتوى فعلي فقط
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (!draftHasContent(form)) return;
+    setSaveState('saving');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (submittedRef.current) return; // لا إحياء للمسودة بعد الإنشاء
+      void saveNewCaseDraft({ ...form, projectId, step }).then((saved) => {
+        if (!mountedRef.current) return;
+        setSaveState('saved');
+        setLastSavedAt(saved.updatedAt);
+      });
+    }, 800);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [form, projectId, step]);
+
+  const saveDraftNow = async () => {
+    setSaveState('saving');
+    const saved = await saveNewCaseDraft({ ...form, projectId, step });
+    if (!mountedRef.current) return;
+    setSaveState('saved');
+    setLastSavedAt(saved.updatedAt);
+  };
+
+  const relTime = (iso: string): string => {
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return tr('draft.justNow');
+    if (mins < 60) return tr('draft.minAgo', { n: mins });
+    return tr('draft.hourAgo', { n: Math.floor(mins / 60) });
+  };
+
+  const draftStatus =
+    saveState === 'saving'
+      ? tr('draft.saving')
+      : saveState === 'saved'
+        ? tr('draft.saved')
+        : lastSavedAt
+          ? tr('draft.lastSaved', { time: relTime(lastSavedAt) })
+          : '';
+
+  const confirmStartNew = () => {
+    Alert.alert(tr('draft.discardConfirm'), '', [
+      { text: tr('common.cancel'), style: 'cancel' },
+      {
+        text: tr('draft.startNew'),
+        style: 'destructive',
+        onPress: () => {
+          submittedRef.current = false;
+          void deleteNewCaseDraft();
+          setForm({ title: '', description: '' });
+          setProjectId(undefined);
+          setStep(0);
+          setRestored(false);
+          setSaveState('idle');
+          setLastSavedAt(null);
+        },
+      },
+    ]);
+  };
 
   const set = (patch: Partial<CaseInput>) => setForm((f) => ({ ...f, ...patch }));
   const steps = [tr('new.s1'), tr('new.s2'), tr('new.s3'), tr('new.s4')];
@@ -62,8 +162,13 @@ export function NewCaseScreen({
       return;
     }
     setSaving(true);
+    // أوقف أي حفظ مؤجل قبل الحذف — حتى لا تُبعث المسودة بعد الإنشاء
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    submittedRef.current = true;
     try {
       const c = await createCase({ ...form, projectId });
+      // المسودة انتهت مهمتها — تُحذف بعد نجاح الإنشاء فقط
+      await deleteNewCaseDraft();
       onCreated(c.id);
     } finally {
       setSaving(false);
@@ -103,11 +208,55 @@ export function NewCaseScreen({
           </View>
         ))}
       </View>
-      <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
-        {tr('new.step', { n: step + 1, total: 4 })}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny, flex: 1 }}>
+          {tr('new.step', { n: step + 1, total: 4 })}
+        </Text>
+        {draftStatus ? (
+          <Text
+            style={{
+              color: saveState === 'saved' ? t.colors.success : t.colors.textFaint,
+              fontSize: t.font.tiny,
+            }}
+          >
+            {draftStatus}
+          </Text>
+        ) : null}
+        <Pressable
+          onPress={() => void saveDraftNow()}
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: t.colors.cardBorder,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ color: t.colors.primary, fontSize: t.font.small, fontWeight: '700' }}>
+            {tr('draft.save')}
+          </Text>
+        </Pressable>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing(3), paddingBottom: 20 }}>
+        {restored && (
+          <Card dark={dark} style={{ backgroundColor: t.colors.infoDim, borderColor: t.colors.infoDim, gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={14} color={t.colors.info} />
+              <Text style={{ flex: 1, color: t.colors.text, fontSize: t.font.tiny }}>{tr('draft.restored')}</Text>
+            </View>
+            <Pressable onPress={confirmStartNew} accessibilityRole="button">
+              <Text style={{ color: t.colors.primary, fontSize: t.font.small, fontWeight: '700' }}>
+                {tr('draft.startNew')}
+              </Text>
+            </Pressable>
+          </Card>
+        )}
         {step === 0 && (
           <>
             <Field

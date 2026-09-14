@@ -8,6 +8,7 @@ export const KEYS = {
   SETTINGS: 'tw_settings_v1',
   SECURITY_LOG: 'tw_security_log_v1',
   PROJECTS: 'tw_projects_v1',
+  NEW_CASE_DRAFT: 'tw_new_case_draft_v1',
 } as const;
 
 export async function loadJson<T>(key: string): Promise<T | null> {
@@ -22,4 +23,8 @@ export async function loadJson<T>(key: string): Promise<T | null> {
 
 export async function saveJson(key: string, value: unknown): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
+}
+
+export async function removeKey(key: string): Promise<void> {
+  await AsyncStorage.removeItem(key);
 }
