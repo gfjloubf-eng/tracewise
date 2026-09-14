@@ -38,7 +38,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web --port 8081",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "apk": "expo prebuild --platform android --no-install --clean && cd android && ./gradlew assembleDebug",
+    "apk:release": "expo prebuild --platform android --no-install --clean && cd android && ./gradlew assembleRelease"
   },
   "private": true,
   "jest": {
