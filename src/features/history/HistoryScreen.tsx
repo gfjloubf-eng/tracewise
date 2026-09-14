@@ -1,0 +1,106 @@
+/** السجل — كل الحالات + بحث + تصفية (حالة/خطورة/لغة) */
+import React, { useMemo, useState } from 'react';
+import { ScrollView, Text, TextInput, View } from 'react-native';
+import { getTheme } from '../../core/theme';
+import { Chip, EmptyState, SectionTitle } from '../../ui/components';
+import { CaseCard } from '../../ui/components/CaseCard';
+import { useI18n } from '../../core/i18n/I18nProvider';
+import { useStore } from '../../state/AppStore';
+import { CASE_STATES_ORDER } from '../../domain/caseStates';
+import { CaseState, Severity } from '../../domain/types';
+
+const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low'];
+
+export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: (id: string) => void }) {
+  const t = getTheme(dark);
+  const { t: tr } = useI18n();
+  const { cases } = useStore();
+
+  const [query, setQuery] = useState('');
+  const [state, setState] = useState<CaseState | 'all'>('all');
+  const [severity, setSeverity] = useState<Severity | 'all'>('all');
+  const [language, setLanguage] = useState<string>('all');
+
+  const languages = useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => c.language && set.add(c.language));
+    return Array.from(set);
+  }, [cases]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return cases
+      .filter((c) => (state === 'all' ? true : c.state === state))
+      .filter((c) => (severity === 'all' ? true : c.severity === severity))
+      .filter((c) => (language === 'all' ? true : c.language === language))
+      .filter((c) =>
+        q
+          ? `${c.title} ${c.description} ${c.errorMessage ?? ''} ${c.tags.join(' ')}`.toLowerCase().includes(q)
+          : true
+      )
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }, [cases, query, state, severity, language]);
+
+  return (
+    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+      <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
+        {tr('history.title')}
+      </Text>
+
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder={tr('history.search')}
+        placeholderTextColor={t.colors.textFaint}
+        style={{
+          backgroundColor: t.colors.inputBg,
+          borderRadius: t.radius.md,
+          borderWidth: 1,
+          borderColor: t.colors.cardBorder,
+          color: t.colors.text,
+          fontSize: t.font.body,
+          paddingHorizontal: t.spacing(4),
+          minHeight: 48,
+        }}
+      />
+
+      <SectionTitle dark={dark} text={tr('history.filterState')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <Chip dark={dark} label={tr('common.all')} active={state === 'all'} onPress={() => setState('all')} />
+        {CASE_STATES_ORDER.map((s) => (
+          <Chip key={s} dark={dark} label={tr(`state.${s}`)} active={state === s} onPress={() => setState(s)} />
+        ))}
+      </ScrollView>
+
+      <SectionTitle dark={dark} text={tr('history.filterSeverity')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <Chip dark={dark} label={tr('common.all')} active={severity === 'all'} onPress={() => setSeverity('all')} />
+        {SEVERITIES.map((s) => (
+          <Chip key={s} dark={dark} label={tr(`severity.${s}`)} active={severity === s} onPress={() => setSeverity(s)} />
+        ))}
+      </ScrollView>
+
+      {languages.length > 0 && (
+        <>
+          <SectionTitle dark={dark} text={tr('history.filterLanguage')} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Chip dark={dark} label={tr('common.all')} active={language === 'all'} onPress={() => setLanguage('all')} />
+            {languages.map((l) => (
+              <Chip key={l} dark={dark} label={l} active={language === l} onPress={() => setLanguage(l)} />
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
+        {tr('history.count', { n: filtered.length })}
+      </Text>
+
+      {filtered.length === 0 ? (
+        <EmptyState dark={dark} icon="search-outline" title={tr('history.empty')} />
+      ) : (
+        filtered.map((c) => <CaseCard key={c.id} c={c} dark={dark} onPress={() => onOpenCase(c.id)} />)
+      )}
+    </View>
+  );
+}
