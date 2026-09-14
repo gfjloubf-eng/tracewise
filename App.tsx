@@ -28,6 +28,7 @@ import { MemoryScreen } from './src/features/memory/MemoryScreen';
 import { SecurityScreen } from './src/features/security/SecurityScreen';
 import { IntegrationsScreen } from './src/features/integrations/IntegrationsScreen';
 import { RepoBrowserScreen } from './src/features/integrations/RepoBrowserScreen';
+import { ProjectsScreen } from './src/features/projects/ProjectsScreen';
 import { SettingsScreen } from './src/features/settings/SettingsScreen';
 import { AboutScreen } from './src/features/about/AboutScreen';
 import { ScannerScreen } from './src/features/scanner/ScannerScreen';
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   Security: undefined;
   Integrations: undefined;
   GitHubBrowser: undefined;
+  Projects: undefined;
   Settings: undefined;
   About: undefined;
 };
@@ -80,6 +82,7 @@ function TabsNavigator() {
             onScan={() => navigation.navigate('Scanner', {})}
             onSecurity={() => navigation.navigate('Security')}
             onMemory={() => navigation.navigate('Memory')}
+            onProjects={() => navigation.navigate('Projects')}
           />
         )}
       </Tabs.Screen>
@@ -137,6 +140,7 @@ function MoreScreen({ dark, navigation }: { dark: boolean; navigation: { navigat
   const t = getTheme(dark);
   const { t: tr } = useI18n();
   const rows: Array<{ icon: keyof typeof Ionicons.glyphMap; label: string; target: keyof RootStackParamList }> = [
+    { icon: 'cube-outline', label: tr('projects.title'), target: 'Projects' },
     { icon: 'shield-checkmark-outline', label: tr('security.title'), target: 'Security' },
     { icon: 'git-branch-outline', label: tr('integrations.title'), target: 'Integrations' },
     { icon: 'settings-outline', label: tr('settings.title'), target: 'Settings' },
@@ -252,6 +256,7 @@ function RootNavigator() {
               dark={dark}
               onBack={() => navigation.goBack()}
               onDeleted={() => navigation.goBack()}
+              onOpenCase={(id) => navigation.navigate('CaseDetails', { caseId: id })}
             />
           )}
         </Stack.Screen>
@@ -296,6 +301,16 @@ function RootNavigator() {
           {({ navigation }) => (
             <SubScreen title={tr('integrations.title')} dark={dark} onBack={() => navigation.goBack()}>
               <IntegrationsScreen dark={dark} onBrowse={() => navigation.navigate('GitHubBrowser')} />
+            </SubScreen>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Projects">
+          {({ navigation }) => (
+            <SubScreen title={tr('projects.title')} dark={dark} onBack={() => navigation.goBack()}>
+              <ProjectsScreen
+                dark={dark}
+                onOpenCase={(id) => navigation.navigate('CaseDetails', { caseId: id })}
+              />
             </SubScreen>
           )}
         </Stack.Screen>

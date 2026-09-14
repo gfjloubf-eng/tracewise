@@ -108,7 +108,12 @@ export interface FixPlan {
   verificationHintAr: string;
   verificationHintEn: string;
   createdAt: string;
-  status: 'proposed' | 'applied';
+  /** مقترحة ← معتمدة (موافقة صريحة) ← مطبقة */
+  status: 'proposed' | 'approved' | 'applied';
+  appliedAt?: string;
+  /** معاينة قبل/بعد (اختيارية — عرض فقط، لا تنفيذ) */
+  previewBefore?: string;
+  previewAfter?: string;
 }
 
 export type VerificationResult = 'verified' | 'likely' | 'unresolved';
@@ -126,6 +131,63 @@ export interface VerificationRecord {
   createdAt: string;
 }
 
+/** مشروع — مساحة عمل تجمع الحالات ذات السياق المشترك */
+export interface Project {
+  id: string;
+  name: string;
+  language?: string;
+  framework?: string;
+  platform?: string;
+  repository?: string;
+  environment?: string;
+  createdAt: string;
+}
+
+/** أنواع التغييرات — "ما الذي تغير؟" */
+export type ChangeKind =
+  | 'code'
+  | 'dependency'
+  | 'config'
+  | 'api'
+  | 'database'
+  | 'auth'
+  | 'platform'
+  | 'environment';
+
+export interface ChangeRecord {
+  id: string;
+  kind: ChangeKind;
+  description: string;
+  at: string;
+  /** دليل مرتبط (يُنشأ تلقائيًا من نوع recent_change) */
+  linkedEvidenceId?: string;
+}
+
+/** أحداث الخط الزمني للحالة */
+export type TimelineEventType =
+  | 'created'
+  | 'evidence'
+  | 'change'
+  | 'diagnosis'
+  | 'hypothesis'
+  | 'fix_proposed'
+  | 'fix_applied'
+  | 'verification_evidence'
+  | 'verified'
+  | 'likely_resolved'
+  | 'reopened'
+  | 'closed';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  at: string;
+  titleAr: string;
+  titleEn: string;
+  detailAr?: string;
+  detailEn?: string;
+}
+
 export interface DebugCase {
   id: string;
   title: string;
@@ -141,6 +203,12 @@ export interface DebugCase {
   triedFixes?: string;
   state: CaseState;
   severity: Severity;
+  /** المشروع المرتبط (اختياري) */
+  projectId?: string;
+  /** سجل التغييرات — "ما الذي تغير؟" (اختياري للتوافق مع البيانات المحفوظة قديمًا) */
+  changes?: ChangeRecord[];
+  /** أحداث صريحة (تغييرات حالة، إعادة فتح…) — يدمج مع المشتق في الخط الزمني */
+  events?: TimelineEvent[];
   /** بيانات تجريبية للتعريف بالتطبيق */
   isDemo: boolean;
   createdAt: string;

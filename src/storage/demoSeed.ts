@@ -2,13 +2,34 @@
  * حالات تجريبية (Demo) تُضاف عند أول تشغيل حتى يفهم المستخدم التطبيق.
  * معلّمة بـ isDemo: true وتظهر بشارة "تجريبية" في الواجهة.
  */
-import { DebugCase } from '../domain/types';
+import { DebugCase, Project } from '../domain/types';
 
 const now = Date.now();
 const iso = (offsetMin: number) => new Date(now - offsetMin * 60_000).toISOString();
 
-export function buildDemoCases(): DebugCase[] {
-  return [
+export function buildDemoCases(): { demoCases: DebugCase[]; demoProjects: Project[] } {
+  const demoProjects: Project[] = [
+    {
+      id: 'demo-proj-1',
+      name: 'تطبيق الموبايل — Flutter',
+      language: 'Dart',
+      framework: 'Flutter',
+      platform: 'Android / iOS',
+      repository: 'example/mobile-app',
+      environment: 'production',
+      createdAt: iso(60 * 30),
+    },
+    {
+      id: 'demo-proj-2',
+      name: 'خدمة الويب — Node',
+      language: 'TypeScript',
+      framework: 'Node.js',
+      platform: 'Server',
+      environment: 'production',
+      createdAt: iso(60 * 30),
+    },
+  ];
+  const demoCases: DebugCase[] = [
     {
       id: 'demo-1',
       title: 'فشل تسجيل الدخول — HTTP 401',
@@ -25,6 +46,9 @@ export function buildDemoCases(): DebugCase[] {
       triedFixes: 'إعادة تثبيت التطبيق ومسح الكاش — دون فائدة',
       state: 'verified',
       severity: 'high',
+      projectId: 'demo-proj-2',
+      changes: [],
+      events: [],
       isDemo: true,
       createdAt: iso(60 * 26),
       updatedAt: iso(60 * 2),
@@ -140,6 +164,9 @@ export function buildDemoCases(): DebugCase[] {
       environment: 'إنتاج — iOS 17 — Flutter 3.24',
       state: 'fix_plan',
       severity: 'critical',
+      projectId: 'demo-proj-1',
+      changes: [],
+      events: [],
       isDemo: true,
       createdAt: iso(60 * 5),
       updatedAt: iso(60 * 3),
@@ -226,6 +253,9 @@ export function buildDemoCases(): DebugCase[] {
       environment: 'تطوير — macOS 14 — Node 20',
       state: 'open',
       severity: 'medium',
+      projectId: 'demo-proj-2',
+      changes: [],
+      events: [],
       isDemo: true,
       createdAt: iso(60 * 1),
       updatedAt: iso(60 * 1),
@@ -242,4 +272,5 @@ export function buildDemoCases(): DebugCase[] {
       },
     },
   ];
+  return { demoCases, demoProjects };
 }

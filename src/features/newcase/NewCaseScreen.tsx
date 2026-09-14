@@ -27,7 +27,8 @@ export function NewCaseScreen({
 }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
-  const { createCase } = useStore();
+  const { createCase, projects } = useStore();
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CaseInput>({ title: '', description: '' });
@@ -62,7 +63,7 @@ export function NewCaseScreen({
     }
     setSaving(true);
     try {
-      const c = await createCase(form);
+      const c = await createCase({ ...form, projectId });
       onCreated(c.id);
     } finally {
       setSaving(false);
@@ -124,6 +125,22 @@ export function NewCaseScreen({
               multiline
               placeholder={tr('new.descriptionHint')}
             />
+            {projects.length > 0 && (
+              <>
+                <SectionTitle dark={dark} text={tr('projects.pick')} icon="cube-outline" />
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {projects.map((p) => (
+                    <Chip
+                      key={p.id}
+                      dark={dark}
+                      label={p.name}
+                      active={projectId === p.id}
+                      onPress={() => setProjectId(projectId === p.id ? undefined : p.id)}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
             <SectionTitle dark={dark} text={tr('new.language')} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {LANGUAGES.map((l) => (

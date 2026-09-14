@@ -29,11 +29,13 @@ export function CaseDetailsScreen({
   dark,
   onBack,
   onDeleted,
+  onOpenCase,
 }: {
   caseId: string;
   dark: boolean;
   onBack: () => void;
   onDeleted: () => void;
+  onOpenCase?: (id: string) => void;
 }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
@@ -134,7 +136,16 @@ export function CaseDetailsScreen({
 
       <ScrollView contentContainerStyle={{ padding: t.spacing(4), gap: t.spacing(3), paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         {tab === 'journey' && (
-          <JourneyTab c={c} dark={dark} onAnalyze={() => void runAnalysis(c.id)} analyzing={analyzing} />
+          <JourneyTab
+            c={c}
+            dark={dark}
+            onAnalyze={() => void runAnalysis(c.id)}
+            analyzing={analyzing}
+            onOpenCase={(id) => {
+              onBack();
+              onOpenCase?.(id);
+            }}
+          />
         )}
         {tab === 'evidence' && <EvidenceTab c={c} dark={dark} />}
         {tab === 'analysis' && (

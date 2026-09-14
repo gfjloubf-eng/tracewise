@@ -15,13 +15,17 @@ import {
   AppSettings,
   CaseInput,
   CaseState,
+  ChangeKind,
   DebugCase,
   DEFAULT_SETTINGS,
   Evidence,
   EvidenceType,
+  Project,
   SecurityLogEntry,
+  TimelineEvent,
   VerificationRecord,
 } from '../domain/types';
+import { CHANGE_KIND_LABELS } from '../domain/timeline';
 import { canTransition } from '../domain/caseStates';
 import { assessSeverity } from '../domain/severity';
 import { buildFingerprint } from '../domain/fingerprint';
@@ -46,14 +50,20 @@ export interface NewEvidenceInput {
   imageDataUri?: string;
 }
 
-interface StoreValue {
+export interface StoreValue {
   ready: boolean;
   cases: DebugCase[];
+  projects: Project[];
   settings: AppSettings;
   securityLog: SecurityLogEntry[];
   analyzingCaseId: string | null;
 
-  createCase: (input: CaseInput) => Promise<DebugCase>;
+  createProject: (p: Omit<Project, 'id' | 'createdAt'>) => Promise<Project>;
+  deleteProject: (id: string) => Promise<void>;
+  addChange: (caseId: string, kind: ChangeKind, description: string) => Promise<void>;
+  approveFixPlan: (caseId: string) => Promise<void>;
+
+  createCase: (input: CaseInput & { projectId?: string }) => Promise<DebugCase>;
   addEvidence: (caseId: string, input: NewEvidenceInput) => Promise<void>;
   deleteEvidence: (caseId: string, evidenceId: string) => Promise<void>;
   runAnalysis: (caseId: string) => Promise<void>;
@@ -92,6 +102,7 @@ function logEntry(
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [cases, setCases] = useState<DebugCase[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [securityLog, setSecurityLog] = useState<SecurityLogEntry[]>([]);
   const [analyzingCaseId, setAnalyzingCaseId] = useState<string | null>(null);
@@ -112,10 +123,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [savedCases, savedSettings, savedLog] = await Promise.all([
+        const [savedCases, savedSettings, savedLog, savedProjects] = await Promise.all([
           loadJson<DebugCase[]>(KEYS.CASES),
           loadJson<AppSettings>(KEYS.SETTINGS),
           loadJson<SecurityLogEntry[]>(KEYS.SECURITY_LOG),
+          loadJson<Project[]>(KEYS.PROJECTS),
         ]);
         const s = { ...DEFAULT_SETTINGS, ...(savedSettings ?? {}) };
         setSettings(s);
@@ -124,16 +136,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (savedCases && savedCases.length > 0) {
           casesRef.current = savedCases;
           setCases(savedCases);
+          setProjects(savedProjects ?? []);
         } else {
-          const demo = buildDemoCases();
-          casesRef.current = demo;
-          setCases(demo);
-          await saveJson(KEYS.CASES, demo);
+          const { demoCases, demoProjects } = buildDemoCases();
+          casesRef.current = demoCases;
+          setCases(demoCases);
+          setProjects(demoProjects);
+          await saveJson(KEYS.CASES, demoCases);
+          await saveJson(KEYS.PROJECTS, demoProjects);
         }
       } catch {
-        const demo = buildDemoCases();
-        casesRef.current = demo;
-        setCases(demo);
+        const { demoCases, demoProjects } = buildDemoCases();
+        casesRef.current = demoCases;
+        setCases(demoCases);
+        setProjects(demoProjects);
       } finally {
         setReady(true);
       }
@@ -161,7 +177,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // ——— إنشاء مشكلة (مع حجب الأسرار من كل الحقول) ———
   const createCase = useCallback(
-    async (input: CaseInput): Promise<DebugCase> => {
+    async (input: CaseInput & { projectId?: string }): Promise<DebugCase> => {
       let redactionTotal = 0;
       const clean = (v?: string) => {
         if (!v) return v;
@@ -196,6 +212,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           cleaned.stackTrace,
           cleaned.title,
         ]),
+        projectId: input.projectId,
+        changes: [],
+        events: [],
         isDemo: false,
         createdAt: nowIso,
         updatedAt: nowIso,
@@ -311,7 +330,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const markFixApplied = useCallback(
     async (caseId: string) => {
       mutateCase(caseId, (c) =>
-        c.fixPlan ? { ...c, fixPlan: { ...c.fixPlan, status: 'applied' } } : c
+        c.fixPlan
+          ? {
+              ...c,
+              fixPlan: { ...c.fixPlan, status: 'applied', appliedAt: new Date().toISOString() },
+            }
+          : c
       );
     },
     [mutateCase]
@@ -355,7 +379,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     async (caseId: string, to: CaseState): Promise<boolean> => {
       const target = casesRef.current.find((c) => c.id === caseId);
       if (!target || !canTransition(target.state, to)) return false;
-      mutateCase(caseId, (c) => ({ ...c, state: to }));
+      const now = new Date().toISOString();
+      const explicit: TimelineEvent | null =
+        to === 'open' && target.state === 'closed'
+          ? { id: uid('tl'), type: 'reopened', at: now, titleAr: 'أُعيد فتح المشكلة', titleEn: 'Reopened' }
+          : to === 'closed'
+            ? { id: uid('tl'), type: 'closed', at: now, titleAr: 'أُغلقت المشكلة', titleEn: 'Closed' }
+            : null;
+      mutateCase(caseId, (c) => ({
+        ...c,
+        state: to,
+        events: explicit ? [...(c.events ?? []), explicit] : c.events,
+      }));
       return true;
     },
     [mutateCase]
@@ -438,6 +473,76 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { scanned, redacted };
   }, [persistCases, pushLog]);
 
+  // ——— المشاريع ———
+  const createProject = useCallback(
+    async (p: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
+      const project: Project = { ...p, id: uid('proj'), createdAt: new Date().toISOString() };
+      setProjects((prev) => {
+        const next = [...prev, project];
+        void saveJson(KEYS.PROJECTS, next);
+        return next;
+      });
+      return project;
+    },
+    []
+  );
+
+  const deleteProject = useCallback(async (id: string) => {
+    setProjects((prev) => {
+      const nextP = prev.filter((p) => p.id !== id);
+      void saveJson(KEYS.PROJECTS, nextP);
+      return nextP;
+    });
+    // فك ربط الحالات (لا حذفها) — تحديث متزامن عبر المرآة
+    const next = casesRef.current.map((c) => (c.projectId === id ? { ...c, projectId: undefined } : c));
+    casesRef.current = next;
+    setCases(next);
+    void saveJson(KEYS.CASES, next);
+  }, []);
+
+  // ——— ما الذي تغير؟ ———
+  const addChange = useCallback(
+    async (caseId: string, kind: ChangeKind, description: string) => {
+      const now = new Date().toISOString();
+      const label = CHANGE_KIND_LABELS[kind];
+      const evId = uid('ev');
+      const changeEv: Evidence = {
+        id: evId,
+        caseId,
+        type: 'recent_change',
+        title: `${label.ar}`,
+        content: description,
+        createdAt: now,
+        redactionCount: 0,
+      };
+      // الحجب يسري على وصف التغيير أيضًا
+      const r = redactText(description);
+      changeEv.content = r.text;
+      changeEv.redactionCount = r.hits.length;
+      mutateCase(caseId, (c) => ({
+        ...c,
+        changes: [
+          ...(c.changes ?? []),
+          { id: uid('chg'), kind, description: r.text, at: now, linkedEvidenceId: evId },
+        ],
+        evidence: [...c.evidence, changeEv],
+      }));
+    },
+    [mutateCase]
+  );
+
+  // ——— اعتماد خطة الإصلاح (موافقة صريحة قبل التطبيق) ———
+  const approveFixPlan = useCallback(
+    async (caseId: string) => {
+      mutateCase(caseId, (c) =>
+        c.fixPlan && c.fixPlan.status === 'proposed'
+          ? { ...c, fixPlan: { ...c.fixPlan, status: 'approved' } }
+          : c
+      );
+    },
+    [mutateCase]
+  );
+
   const exportData = useCallback((): string => {
     return JSON.stringify(
       {
@@ -475,9 +580,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     () => ({
       ready,
       cases,
+      projects,
       settings,
       securityLog,
       analyzingCaseId,
+      createProject,
+      deleteProject,
+      addChange,
+      approveFixPlan,
       createCase,
       addEvidence,
       deleteEvidence,
@@ -496,9 +606,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [
       ready,
       cases,
+      projects,
       settings,
       securityLog,
       analyzingCaseId,
+      createProject,
+      deleteProject,
+      addChange,
+      approveFixPlan,
       createCase,
       addEvidence,
       deleteEvidence,

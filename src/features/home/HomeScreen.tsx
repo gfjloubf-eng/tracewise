@@ -15,6 +15,7 @@ export function HomeScreen({
   onScan,
   onSecurity,
   onMemory,
+  onProjects,
 }: {
   dark: boolean;
   onOpenCase: (id: string) => void;
@@ -22,6 +23,7 @@ export function HomeScreen({
   onScan: () => void;
   onSecurity: () => void;
   onMemory: () => void;
+  onProjects?: () => void;
 }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
@@ -98,6 +100,10 @@ export function HomeScreen({
             <CaseCard c={c} dark={dark} onPress={() => onOpenCase(c.id)} />
           </View>
         ))
+      )}
+
+      {onProjects && (
+        <Btn dark={dark} variant="secondary" icon="cube-outline" label={tr('projects.title')} onPress={onProjects} />
       )}
 
       {/* شريط تقدم المنظومة — تذكير بالمراحل */}

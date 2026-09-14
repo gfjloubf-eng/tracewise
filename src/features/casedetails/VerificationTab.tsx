@@ -2,15 +2,27 @@
  * تبويب التحقق — التفريق الصارم بين «مرجح الحل» و«تم التحقق».
  * التحقق يتطلب دليلًا جديدًا يناقض إشارة الفشل (مثل 401 → 200).
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, EmptyState, Field, SectionTitle } from '../../ui/components';
+import { BottomModal, Btn, Card, Chip, EmptyState, Field, SectionTitle } from '../../ui/components';
 import { useI18n } from '../../core/i18n/I18nProvider';
-import { DebugCase, VerificationResult } from '../../domain/types';
+import { DebugCase, EvidenceType, VerificationResult } from '../../domain/types';
 import { useStore } from '../../state/AppStore';
 import { evaluateVerification } from '../../verification/verifier';
+
+type VerifyInputKind = 'test' | 'http' | 'console' | 'build' | 'screenshot' | 'manual';
+
+const VERIFY_KINDS: Array<{ kind: VerifyInputKind; evType: EvidenceType; icon: keyof typeof Ionicons.glyphMap }> = [
+  { kind: 'test', evType: 'log', icon: 'flask-outline' },
+  { kind: 'http', evType: 'log', icon: 'globe-outline' },
+  { kind: 'console', evType: 'log', icon: 'terminal-outline' },
+  { kind: 'build', evType: 'log', icon: 'build-outline' },
+  { kind: 'screenshot', evType: 'screenshot', icon: 'image-outline' },
+  { kind: 'manual', evType: 'log', icon: 'hand-left-outline' },
+];
 
 const RESULT_META: Record<VerificationResult, { icon: keyof typeof Ionicons.glyphMap; colorKey: 'success' | 'warning' | 'danger' }> = {
   verified: { icon: 'checkmark-done-circle', colorKey: 'success' },
@@ -21,7 +33,7 @@ const RESULT_META: Record<VerificationResult, { icon: keyof typeof Ionicons.glyp
 export function VerificationTab({ c, dark }: { c: DebugCase; dark: boolean }) {
   const t = getTheme(dark);
   const { t: tr, pick } = useI18n();
-  const { recordVerification } = useStore();
+  const { recordVerification, addEvidence } = useStore();
 
   const defaultBefore = c.diagnosis?.fingerprint.signal ?? c.errorMessage ?? '';
   const [before, setBefore] = useState(defaultBefore);
@@ -30,6 +42,22 @@ export function VerificationTab({ c, dark }: { c: DebugCase; dark: boolean }) {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<{ result: VerificationResult; reason: string } | null>(null);
+
+  // مختبر التحقق
+  const pendingAutoSelect = useRef(false);
+  const [labOpen, setLabOpen] = useState(false);
+  const [labKind, setLabKind] = useState<VerifyInputKind>('http');
+  const [labContent, setLabContent] = useState('');
+  const [labBusy, setLabBusy] = useState(false);
+
+  // عند وصول دليل جديد بعد الإضافة من المختبر → حدده تلقائيًا
+  useEffect(() => {
+    if (pendingAutoSelect.current && c.evidence.length > 0) {
+      pendingAutoSelect.current = false;
+      const latest = c.evidence[c.evidence.length - 1];
+      setPicked((p) => (p.includes(latest.id) ? p : [...p, latest.id]));
+    }
+  }, [c.evidence]);
 
   // معاينة النتيجة قبل التسجيل — شفافية كاملة
   const preview = useMemo(
@@ -64,6 +92,52 @@ export function VerificationTab({ c, dark }: { c: DebugCase; dark: boolean }) {
   const toggleEvidence = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
+  /** إضافة نتيجة تحقق كأدلة جديد — تُحدد تلقائيًا لدعم النتيجة */
+  const submitLabResult = async () => {
+    setLabBusy(true);
+    try {
+      const meta = VERIFY_KINDS.find((k) => k.kind === labKind)!;
+      let content = labContent.trim();
+      let imageDataUri: string | undefined;
+
+      if (labKind === 'screenshot') {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          setLabBusy(false);
+          return;
+        }
+        const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+        if (res.canceled || !res.assets[0]?.uri) {
+          setLabBusy(false);
+          return;
+        }
+        imageDataUri = res.assets[0].uri;
+        content = content || 'لقطة شاشة بعد الإصلاح';
+      }
+      if (!content) {
+        setLabBusy(false);
+        return;
+      }
+
+      // نضيف الدليل ثم نقرأ معرفه من المخزن بعد التحديث
+      const before = c.evidence.length;
+      await addEvidence(c.id, {
+        type: meta.evType,
+        title: tr(`verify.kind.${labKind}`),
+        content,
+        imageDataUri,
+      });
+      setLabBusy(false);
+      setLabOpen(false);
+      setLabContent('');
+      // عند وصول الدليل الجديد في c.evidence سيُحدد تلقائيًا (useEffect أدناه)
+      pendingAutoSelect.current = true;
+      void before;
+    } catch {
+      setLabBusy(false);
+    }
+  };
+
   return (
     <View style={{ gap: t.spacing(3) }}>
       <Card dark={dark} style={{ backgroundColor: t.colors.infoDim, borderColor: t.colors.infoDim }}>
@@ -83,6 +157,46 @@ export function VerificationTab({ c, dark }: { c: DebugCase; dark: boolean }) {
           </Text>
         </Card>
       )}
+
+      {/* مختبر التحقق */}
+      <SectionTitle dark={dark} text={tr('verify.lab')} icon="flask-outline" />
+      <Card dark={dark} style={{ gap: t.spacing(2) }}>
+        <Text style={{ color: t.colors.textMuted, fontSize: t.font.small, lineHeight: 19 }}>{tr('verify.labNote')}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {VERIFY_KINDS.map((k) => (
+            <Chip
+              key={k.kind}
+              dark={dark}
+              label={tr(`verify.kind.${k.kind}`)}
+              active={labKind === k.kind}
+              onPress={() => setLabKind(k.kind)}
+            />
+          ))}
+        </View>
+        {labKind === 'manual' && (
+          <Text style={{ color: t.colors.warning, fontSize: t.font.tiny, lineHeight: 16 }}>{tr('verify.manualWarning')}</Text>
+        )}
+        {labKind !== 'screenshot' && (
+          <Field
+            dark={dark}
+            label={tr(`verify.kind.${labKind}`)}
+            value={labContent}
+            onChangeText={setLabContent}
+            multiline
+            mono
+            placeholder={labKind === 'http' ? 'HTTP 200 OK — /api/login' : undefined}
+          />
+        )}
+        <Btn
+          dark={dark}
+          variant="secondary"
+          icon={labKind === 'screenshot' ? 'image-outline' : 'add-circle-outline'}
+          label={tr('verify.addResult')}
+          onPress={submitLabResult}
+          loading={labBusy}
+          disabled={labKind !== 'screenshot' && !labContent.trim()}
+        />
+      </Card>
 
       <SectionTitle dark={dark} text={tr('verify.title')} icon="checkmark-done-outline" />
       <Card dark={dark} style={{ gap: t.spacing(3) }}>

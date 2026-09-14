@@ -7,6 +7,7 @@ export const KEYS = {
   CASES: 'tw_cases_v1',
   SETTINGS: 'tw_settings_v1',
   SECURITY_LOG: 'tw_security_log_v1',
+  PROJECTS: 'tw_projects_v1',
 } as const;
 
 export async function loadJson<T>(key: string): Promise<T | null> {

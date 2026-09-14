@@ -40,6 +40,23 @@ describe('HomeScreen', () => {
   });
 });
 
+describe('تبديل اللغة — English بدون إعادة بناء', () => {
+  it('يعرض الواجهة بالإنجليزية عند lang=en', async () => {
+    const r = await render(
+      <StoreProvider>
+        <I18nProvider lang="en">
+          <HomeScreen dark onOpenCase={noop} onNewCase={noop} onScan={noop} onSecurity={noop} onMemory={noop} />
+        </I18nProvider>
+      </StoreProvider>
+    );
+    expect(r.getByText('Welcome to TRACEWISE')).toBeTruthy();
+    expect(r.getByText('Open cases')).toBeTruthy();
+    expect(r.getByText('Quick actions')).toBeTruthy();
+    // عناوين الحالات بيانات (تبقى كما أدخلت) — الواجهة نفسها إنجليزية
+    expect(await r.findByText('فشل تسجيل الدخول — HTTP 401')).toBeTruthy();
+  });
+});
+
 describe('NewCaseScreen — معالج الإنشاء', () => {
   it('يمنع المتابعة بدون عنوان ثم ينشئ المشكلة', async () => {
     const onCreated = jest.fn();

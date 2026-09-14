@@ -14,12 +14,13 @@ const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low'];
 export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: (id: string) => void }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
-  const { cases } = useStore();
+  const { cases, projects } = useStore();
 
   const [query, setQuery] = useState('');
   const [state, setState] = useState<CaseState | 'all'>('all');
   const [severity, setSeverity] = useState<Severity | 'all'>('all');
   const [language, setLanguage] = useState<string>('all');
+  const [projectId, setProjectId] = useState<string>('all');
 
   const languages = useMemo(() => {
     const set = new Set<string>();
@@ -33,13 +34,14 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
       .filter((c) => (state === 'all' ? true : c.state === state))
       .filter((c) => (severity === 'all' ? true : c.severity === severity))
       .filter((c) => (language === 'all' ? true : c.language === language))
+      .filter((c) => (projectId === 'all' ? true : c.projectId === projectId))
       .filter((c) =>
         q
           ? `${c.title} ${c.description} ${c.errorMessage ?? ''} ${c.tags.join(' ')}`.toLowerCase().includes(q)
           : true
       )
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }, [cases, query, state, severity, language]);
+  }, [cases, query, state, severity, language, projectId]);
 
   return (
     <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
@@ -63,6 +65,18 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
           minHeight: 48,
         }}
       />
+
+      {projects.length > 0 && (
+        <>
+          <SectionTitle dark={dark} text={tr('projects.title')} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Chip dark={dark} label={tr('projects.mine')} active={projectId === 'all'} onPress={() => setProjectId('all')} />
+            {projects.map((p) => (
+              <Chip key={p.id} dark={dark} label={p.name} active={projectId === p.id} onPress={() => setProjectId(p.id)} />
+            ))}
+          </ScrollView>
+        </>
+      )}
 
       <SectionTitle dark={dark} text={tr('history.filterState')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>

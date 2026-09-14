@@ -21,7 +21,7 @@ export function FixPlanTab({
 }) {
   const t = getTheme(dark);
   const { t: tr, pick } = useI18n();
-  const { markFixApplied } = useStore();
+  const { markFixApplied, approveFixPlan } = useStore();
   const p = c.fixPlan;
 
   if (!p) {
@@ -46,7 +46,8 @@ export function FixPlanTab({
           <Text style={{ flex: 1, color: t.colors.text, fontSize: t.font.body, fontWeight: '800' }}>{tr('fix.title')}</Text>
           <View
             style={{
-              backgroundColor: p.status === 'applied' ? t.colors.successDim : t.colors.chipBg,
+              backgroundColor:
+                p.status === 'applied' ? t.colors.successDim : p.status === 'approved' ? t.colors.primaryDim : t.colors.chipBg,
               borderRadius: 999,
               paddingHorizontal: 10,
               paddingVertical: 3,
@@ -54,12 +55,13 @@ export function FixPlanTab({
           >
             <Text
               style={{
-                color: p.status === 'applied' ? t.colors.success : t.colors.textMuted,
+                color:
+                  p.status === 'applied' ? t.colors.success : p.status === 'approved' ? t.colors.text : t.colors.textMuted,
                 fontSize: t.font.tiny,
                 fontWeight: '700',
               }}
             >
-              {p.status === 'applied' ? tr('fix.applied').split('—')[0].trim() : tr('fix.proposed')}
+              {tr(`fix.status.${p.status}`)}
             </Text>
           </View>
         </View>
@@ -120,8 +122,43 @@ export function FixPlanTab({
         </View>
       </Card>
 
+      {/* معاينة قبل/بعد — عرض فقط، لا تنفيذ */}
+      {(p.previewBefore || p.previewAfter) && (
+        <>
+          <SectionTitle dark={dark} text={tr('fix.preview')} icon="code-slash-outline" />
+          {p.previewBefore && (
+            <Card dark={dark} style={{ backgroundColor: t.colors.dangerDim, borderColor: t.colors.dangerDim }}>
+              <Text style={{ color: t.colors.danger, fontSize: t.font.tiny, fontWeight: '800' }}>− {tr('fix.before')}</Text>
+              <Text selectable style={{ color: t.colors.text, fontFamily: 'monospace', fontSize: t.font.small, writingDirection: 'ltr', textAlign: 'left' }}>
+                {p.previewBefore}
+              </Text>
+            </Card>
+          )}
+          {p.previewAfter && (
+            <Card dark={dark} style={{ backgroundColor: t.colors.successDim, borderColor: t.colors.successDim }}>
+              <Text style={{ color: t.colors.success, fontSize: t.font.tiny, fontWeight: '800' }}>+ {tr('fix.after')}</Text>
+              <Text selectable style={{ color: t.colors.text, fontFamily: 'monospace', fontSize: t.font.small, writingDirection: 'ltr', textAlign: 'left' }}>
+                {p.previewAfter}
+              </Text>
+            </Card>
+          )}
+        </>
+      )}
+
+      <Card dark={dark} style={{ backgroundColor: t.colors.infoDim, borderColor: t.colors.infoDim }}>
+        <Text style={{ color: t.colors.text, fontSize: t.font.tiny, lineHeight: 16 }}>{tr('fix.approvalNote')}</Text>
+      </Card>
+
       {p.status === 'proposed' && (
-        <Btn dark={dark} icon="checkmark-circle-outline" label={tr('fix.apply')} onPress={() => void markFixApplied(c.id)} />
+        <Btn dark={dark} icon="checkmark-circle-outline" label={tr('fix.approve')} onPress={() => void approveFixPlan(c.id)} />
+      )}
+      {p.status === 'approved' && (
+        <>
+          <Text style={{ color: t.colors.primary, fontSize: t.font.small, fontWeight: '700', textAlign: 'center' }}>
+            {tr('fix.approved')}
+          </Text>
+          <Btn dark={dark} variant="success" icon="hammer-outline" label={tr('fix.apply')} onPress={() => void markFixApplied(c.id)} />
+        </>
       )}
     </View>
   );

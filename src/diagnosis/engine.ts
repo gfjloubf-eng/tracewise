@@ -122,6 +122,8 @@ export function buildFixPlan(top: Hypothesis, debugCase: DebugCase): FixPlan {
     problemEn: debugCase.title,
     causeAr: top.titleAr,
     causeEn: top.titleEn,
+    previewBefore: rule.fix.previewBefore,
+    previewAfter: rule.fix.previewAfter,
     changeAr: rule.fix.changeAr,
     changeEn: rule.fix.changeEn,
     whyAr: rule.fix.whyAr,

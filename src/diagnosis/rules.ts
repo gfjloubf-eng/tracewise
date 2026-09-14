@@ -5,6 +5,9 @@
 import { RiskLevel } from '../domain/types';
 
 export interface RuleFixTemplate {
+  /** معاينة كود قبل/بعد — عرض فقط، لا تُنفذ تلقائيًا أبدًا */
+  previewBefore?: string;
+  previewAfter?: string;
   changeAr: string;
   changeEn: string;
   whyAr: string;
@@ -51,6 +54,16 @@ export const RULES: DiagnosisRule[] = [
       'Review refresh token logic',
     ],
     fix: {
+      previewBefore: `// التوكن لا يُرسل أو منتهٍ
+const res = await api.post('/login', body);`,
+      previewAfter: `// إرسال توكن صالح + تجديد تلقائي عند 401
+api.interceptors.response.use(r => r, async (err) => {
+  if (err.response?.status === 401) {
+    await refreshToken();
+    return api.request(err.config); // إعادة محاولة واحدة
+  }
+  throw err;
+});`,
       changeAr: 'إصلاح إرسال/تجديد التوكن: إرسال Authorization: Bearer <token> صالح، وتجديده قبل الانتهاء.',
       changeEn: 'Fix token send/renewal: send a valid Authorization: Bearer <token> and refresh before expiry.',
       whyAr: 'رمز 401 يعني أن الخادم رفض الهوية المرسلة أو أنها منتهية.',
@@ -86,6 +99,12 @@ export const RULES: DiagnosisRule[] = [
     ],
     checksEn: ['Compare request path with route definitions', 'Check base URL per environment', 'Verify API version'],
     fix: {
+      previewBefore: `// مسار غير مسجَّل
+app.get('/api/order', handler);   // المطلوب: /api/orders
+fetch('/api/orders');             // → 404`,
+      previewAfter: `// تصحيح المسار أو تسجيل Route الناقص
+app.get('/api/orders', handler);
+fetch('/api/orders');             // → 200`,
       changeAr: 'تصحيح مسار الطلب أو تسجيل الـ Route الناقص في الخادم.',
       changeEn: 'Correct the request path or register the missing route on the server.',
       whyAr: 'رمز 404 يعني أن المسار المطلوب غير موجود كما هو مكتوب.',
@@ -140,6 +159,12 @@ export const RULES: DiagnosisRule[] = [
     ],
     checksEn: ['Verify the response is really JSON, not HTML', 'Check charset and Content-Type', 'Validate before parsing'],
     fix: {
+      previewBefore: `const data = JSON.parse(res.data); // قد تكون HTML`,
+      previewAfter: `if (String(res.headers['content-type'] ?? '').includes('json')) {
+  const data = JSON.parse(res.data);
+} else {
+  throw new ApiError('استجابة غير JSON: ' + res.data.slice(0, 80));
+}`,
       changeAr: 'التحقق من نوع المحتوى قبل التحليل، ومعالجة الاستجابات غير JSON برسالة واضحة.',
       changeEn: 'Check content type before parsing and handle non-JSON responses with a clear message.',
       whyAr: 'الخطأ يحدث عند محاولة قراءة نص ليس JSON صالحًا.',
@@ -248,6 +273,8 @@ export const RULES: DiagnosisRule[] = [
     ],
     checksEn: ['Locate line from stack trace', 'Check data that may lack the field', 'Add optional chaining or strict types'],
     fix: {
+      previewBefore: `final url = user.avatar!.url; // يتحطم عند null`,
+      previewAfter: `final url = user.avatar?.url ?? kDefaultAvatar;`,
       changeAr: 'حماية مسار البيانات: قيم افتراضية آمنة أو تحقق مسبق قبل الاستخدام.',
       changeEn: 'Guard the data path: safe defaults or pre-validation before use.',
       whyAr: 'الكود يفترض وجود قيمة بينما هي فارغة في حالة تشغيلية معينة.',

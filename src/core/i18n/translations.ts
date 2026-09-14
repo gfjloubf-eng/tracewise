@@ -308,6 +308,60 @@ export const ar: Dict = {
   'state.closed': 'مغلقة',
   'state.moveTo': 'نقل الحالة إلى',
 
+  // المشاريع
+  'projects.title': 'المشاريع',
+  'projects.create': 'مشروع جديد',
+  'projects.name': 'اسم المشروع',
+  'projects.repository': 'المستودع (اختياري)',
+  'projects.environment': 'البيئة (اختياري)',
+  'projects.cases': '{n} حالة',
+  'projects.empty': 'لا مشاريع بعد — أنشئ مشروعًا لتنظيم حالاتك.',
+  'projects.pick': 'المشروع (اختياري)',
+  'projects.open': 'فتح المشروع',
+  'projects.deleteConfirm': 'حذف المشروع؟ (الحالات تبقى مع فك الارتباط)',
+  'projects.mine': 'كل الحالات',
+
+  // الخط الزمني
+  'timeline.title': 'الخط الزمني',
+  'timeline.empty': 'لا أحداث بعد.',
+
+  // ما الذي تغير؟
+  'changes.title': 'ما الذي تغير؟',
+  'changes.add': 'تسجيل تغيير',
+  'changes.empty': 'لم تُسجل تغييرات. سجّل أي تغيير حديث — غالبًا السبب هناك.',
+  'changes.kind': 'نوع التغيير',
+  'changes.description': 'وصف التغيير',
+  'changes.linked': 'مرتبط بدليل',
+
+  // خطة الإصلاح — الموافقة
+  'fix.approve': 'موافقة على الخطة',
+  'fix.approved': 'معتمدة — بانتظار التطبيق',
+  'fix.status.proposed': 'مقترحة',
+  'fix.status.approved': 'معتمدة',
+  'fix.status.applied': 'مطبقة',
+  'fix.preview': 'معاينة التغيير (قبل / بعد)',
+  'fix.before': 'قبل',
+  'fix.after': 'بعد',
+  'fix.approvalNote': 'لن يُطبق أي شيء تلقائيًا — الموافقة صريحة والتنفيذ عليك.',
+
+  // مختبر التحقق
+  'verify.lab': 'مختبر التحقق',
+  'verify.labNote': 'أضف نتيجة قابلة للقياس: اختبار، HTTP status، مخرجات Console، نتيجة بناء، لقطة، أو تأكيد يدوي.',
+  'verify.inputKind': 'نوع النتيجة',
+  'verify.kind.test': 'نتيجة اختبار',
+  'verify.kind.http': 'HTTP Status',
+  'verify.kind.console': 'مخرجات Console',
+  'verify.kind.build': 'نتيجة بناء',
+  'verify.kind.screenshot': 'لقطة شاشة',
+  'verify.kind.manual': 'تأكيد يدوي',
+  'verify.addResult': 'إضافة نتيجة كأدلة',
+  'verify.manualWarning': 'التأكيد اليدوي بدون دليل قابل للقياس ينتج «مرجح الحل» فقط — لا «تم التحقق».',
+
+  // مشابهة عند الإنشاء
+  'memory.similarFound': 'مشاكل مشابهة من الذاكرة',
+  'memory.trustedFix': 'حل موثّق — يمكن الاعتماد عليه',
+  'memory.untrustedFix': 'غير موثّق — للاسترشاد فقط',
+
   'severity.low': 'منخفضة',
   'severity.medium': 'متوسطة',
   'severity.high': 'عالية',
@@ -599,6 +653,60 @@ export const en: Dict = {
   'state.verified': 'Verified',
   'state.closed': 'Closed',
   'state.moveTo': 'Move to',
+
+  // Projects
+  'projects.title': 'Projects',
+  'projects.create': 'New project',
+  'projects.name': 'Project name',
+  'projects.repository': 'Repository (optional)',
+  'projects.environment': 'Environment (optional)',
+  'projects.cases': '{n} case(s)',
+  'projects.empty': 'No projects yet — create one to organize your cases.',
+  'projects.pick': 'Project (optional)',
+  'projects.open': 'Open project',
+  'projects.deleteConfirm': 'Delete project? (cases stay, unlinked)',
+  'projects.mine': 'All cases',
+
+  // Timeline
+  'timeline.title': 'Timeline',
+  'timeline.empty': 'No events yet.',
+
+  // What changed?
+  'changes.title': 'What changed?',
+  'changes.add': 'Record a change',
+  'changes.empty': 'No changes recorded. Record any recent change — the cause is often there.',
+  'changes.kind': 'Change type',
+  'changes.description': 'Change description',
+  'changes.linked': 'linked to evidence',
+
+  // Fix approval
+  'fix.approve': 'Approve plan',
+  'fix.approved': 'Approved — awaiting application',
+  'fix.status.proposed': 'Proposed',
+  'fix.status.approved': 'Approved',
+  'fix.status.applied': 'Applied',
+  'fix.preview': 'Change preview (before / after)',
+  'fix.before': 'Before',
+  'fix.after': 'After',
+  'fix.approvalNote': 'Nothing is applied automatically — approval is explicit and execution is yours.',
+
+  // Verification lab
+  'verify.lab': 'Verification Lab',
+  'verify.labNote': 'Add a measurable result: test, HTTP status, console output, build result, screenshot, or manual confirmation.',
+  'verify.inputKind': 'Result type',
+  'verify.kind.test': 'Test result',
+  'verify.kind.http': 'HTTP Status',
+  'verify.kind.console': 'Console output',
+  'verify.kind.build': 'Build result',
+  'verify.kind.screenshot': 'Screenshot',
+  'verify.kind.manual': 'Manual confirmation',
+  'verify.addResult': 'Add result as evidence',
+  'verify.manualWarning': 'Manual confirmation without measurable evidence yields "likely resolved" only — never "verified".',
+
+  // Similar on creation
+  'memory.similarFound': 'Similar problems from memory',
+  'memory.trustedFix': 'Verified fix — trustworthy',
+  'memory.untrustedFix': 'Unverified — reference only',
 
   'severity.low': 'Low',
   'severity.medium': 'Medium',
