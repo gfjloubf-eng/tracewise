@@ -5,7 +5,7 @@
  */
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { I18nManager, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -27,6 +27,7 @@ import { NewCaseScreen } from './src/features/newcase/NewCaseScreen';
 import { MemoryScreen } from './src/features/memory/MemoryScreen';
 import { SecurityScreen } from './src/features/security/SecurityScreen';
 import { IntegrationsScreen } from './src/features/integrations/IntegrationsScreen';
+import { RepoBrowserScreen } from './src/features/integrations/RepoBrowserScreen';
 import { SettingsScreen } from './src/features/settings/SettingsScreen';
 import { AboutScreen } from './src/features/about/AboutScreen';
 import { ScannerScreen } from './src/features/scanner/ScannerScreen';
@@ -40,6 +41,7 @@ export type RootStackParamList = {
   Scanner: { caseId?: string };
   Security: undefined;
   Integrations: undefined;
+  GitHubBrowser: undefined;
   Settings: undefined;
   About: undefined;
 };
@@ -293,7 +295,14 @@ function RootNavigator() {
         <Stack.Screen name="Integrations">
           {({ navigation }) => (
             <SubScreen title={tr('integrations.title')} dark={dark} onBack={() => navigation.goBack()}>
-              <IntegrationsScreen dark={dark} />
+              <IntegrationsScreen dark={dark} onBrowse={() => navigation.navigate('GitHubBrowser')} />
+            </SubScreen>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="GitHubBrowser">
+          {({ navigation }) => (
+            <SubScreen title={tr('integrations.github')} dark={dark} onBack={() => navigation.goBack()}>
+              <RepoBrowserScreen dark={dark} />
             </SubScreen>
           )}
         </Stack.Screen>
@@ -324,6 +333,12 @@ function Themed() {
       <RootNavigator />
     </I18nProvider>
   );
+}
+
+// RTL من أول إقلاع على Android/iOS — اللغة الافتراضية العربية
+// (forceRTL يسري من الإطلاق التالي؛ استدعاؤه عند تحميل الوحدة يضمن RTL من أول تثبيت)
+if (Platform.OS !== 'web' && !I18nManager.isRTL) {
+  I18nManager.forceRTL(true);
 }
 
 export default function App() {

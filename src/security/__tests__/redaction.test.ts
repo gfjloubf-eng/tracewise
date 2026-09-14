@@ -58,6 +58,22 @@ password=hunter2
     expect(r.hits).toHaveLength(0);
   });
 
+  it('الحجب Idempotent — نص محجوب لا يُعاد حجبه ولا يُكتشف كسر', () => {
+    const originals = [
+      'Authorization: Bearer abcdef1234567890',
+      'api_key=SUPERSECRETVALUE123',
+      'password=hunter2x',
+      'postgres://admin:secret@db.example.com:5432/app',
+    ];
+    for (const o of originals) {
+      const once = redactText(o);
+      expect(containsSecrets(once.text)).toBe(false);
+      const twice = redactText(once.text);
+      expect(twice.text).toBe(once.text);
+      expect(twice.hits).toHaveLength(0);
+    }
+  });
+
   it('containsSecrets تكشف الأسرار', () => {
     expect(containsSecrets('Authorization: Bearer abcdef1234567890')).toBe(true);
     expect(containsSecrets('عادي جدًا')).toBe(false);

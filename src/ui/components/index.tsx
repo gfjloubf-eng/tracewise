@@ -363,7 +363,9 @@ export function Field({
           padding: t.spacing(3),
           minHeight: multiline ? 110 : 48,
           fontFamily: mono ? 'monospace' : undefined,
-          writingDirection: 'auto',
+          // الكود/المسارات/المخرجات تبقى LTR دائمًا؛ النصوص العادية تتبع اللغة
+          writingDirection: mono ? 'ltr' : 'auto',
+          textAlign: mono ? 'left' : undefined,
         }}
       />
       {hint && <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>{hint}</Text>}

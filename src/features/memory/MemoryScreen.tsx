@@ -1,61 +1,29 @@
-/** ذاكرة المبرمج — أسباب متكررة، حلول ناجحة، حالات مشابهة، بصمات */
+/** ذاكرة المبرمج — أسباب متكررة، حلول ناجحة (موثّقة فقط)، حالات مشابهة بتفاصيل كاملة */
 import React, { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { Card, EmptyState, KeyValue, SectionTitle } from '../../ui/components';
+import { Card, EmptyState, KeyValue, SectionTitle, StateBadge } from '../../ui/components';
 import { CaseCard } from '../../ui/components/CaseCard';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
-import { similarity } from '../../domain/fingerprint';
-import { DebugCase } from '../../domain/types';
+import { frequentCauses, findSimilarCases, successfulFixes } from '../../domain/memory';
 
 export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: (id: string) => void }) {
   const t = getTheme(dark);
-  const { t: tr, lang } = useI18n();
+  const { t: tr, pick } = useI18n();
   const { cases } = useStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // الأسباب المتكررة: تجميع حسب errorKind
-  const frequentCauses = useMemo(() => {
-    const groups = new Map<string, { label: string; count: number; caseId?: string }>();
-    for (const c of cases) {
-      const kind = c.fingerprint?.errorKind ?? c.diagnosis?.fingerprint.errorKind;
-      if (!kind || kind === 'unknown') continue;
-      const label = c.diagnosis?.rootCauseAr
-        ? lang === 'ar'
-          ? c.diagnosis.rootCauseAr
-          : c.diagnosis.rootCauseEn ?? c.diagnosis.rootCauseAr
-        : c.fingerprint?.signal ?? kind;
-      const g = groups.get(kind) ?? { label, count: 0 };
-      g.count += 1;
-      groups.set(kind, g);
-    }
-    return Array.from(groups.entries())
-      .map(([kind, g]) => ({ kind, ...g }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-  }, [cases, lang]);
-
-  // الحلول الناجحة: حالات موثّقة
-  const successful = useMemo(
-    () => cases.filter((c) => c.state === 'verified' || c.state === 'closed').slice(0, 5),
-    [cases]
+  const causes = useMemo(() => frequentCauses(cases), [cases]);
+  const successful = useMemo(() => successfulFixes(cases), [cases]);
+  const selected = cases.find((c) => c.id === selectedId) ?? null;
+  const similar = useMemo(
+    () => (selected ? findSimilarCases(selected, cases) : []),
+    [selected, cases]
   );
 
-  const selected = cases.find((c) => c.id === selectedId) ?? null;
-
-  const similar: Array<{ c: DebugCase; score: number }> = useMemo(() => {
-    if (!selected?.fingerprint) return [];
-    return cases
-      .filter((c) => c.id !== selected.id && (c.fingerprint || c.diagnosis?.fingerprint))
-      .map((c) => ({ c, score: similarity(selected.fingerprint!, (c.fingerprint ?? c.diagnosis!.fingerprint)!) }))
-      .filter((x) => x.score >= 0.3)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-  }, [selected, cases]);
-
-  const hasMemory = frequentCauses.length > 0 || successful.length > 0;
+  const hasMemory = causes.length > 0 || successful.length > 0;
 
   return (
     <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
@@ -65,17 +33,17 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
 
       {!hasMemory && <EmptyState dark={dark} icon="bulb-outline" title={tr('memory.empty')} />}
 
-      {frequentCauses.length > 0 && (
+      {causes.length > 0 && (
         <>
           <SectionTitle dark={dark} text={tr('memory.frequentCauses')} icon="stats-chart-outline" />
           <Card dark={dark}>
-            {frequentCauses.map((g, i) => (
-              <View key={g.kind}>
+            {causes.slice(0, 6).map((g, i) => (
+              <View key={g.errorKind}>
                 {i > 0 && <View style={{ height: 1, backgroundColor: t.colors.cardBorder, marginVertical: 8 }} />}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="pulse-outline" size={15} color={t.colors.accent} />
                   <Text style={{ flex: 1, color: t.colors.text, fontSize: t.font.small, fontWeight: '600' }}>
-                    {g.label}
+                    {pick({ ar: g.labelAr, en: g.labelEn })}
                   </Text>
                   <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
                     {tr('memory.times', { n: g.count })}
@@ -90,7 +58,10 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
       {successful.length > 0 && (
         <>
           <SectionTitle dark={dark} text={tr('memory.successfulFixes')} icon="checkmark-done-outline" />
-          {successful.map((c) => (
+          <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
+            الحلول الموثّقة بدليل فقط (Verified) — لا يُعتبر أي حل ناجحًا بدون تحقق.
+          </Text>
+          {successful.slice(0, 5).map((c) => (
             <CaseCard key={c.id} c={c} dark={dark} onPress={() => onOpenCase(c.id)} />
           ))}
         </>
@@ -141,14 +112,38 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
           {similar.length === 0 ? (
             <Text style={{ color: t.colors.textFaint, fontSize: t.font.small }}>{tr('memory.noSimilar')}</Text>
           ) : (
-            similar.map(({ c, score }) => (
-              <Card key={c.id} dark={dark} onPress={() => onOpenCase(c.id)}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            similar.map((s) => (
+              <Card key={s.debugCase.id} dark={dark} onPress={() => onOpenCase(s.debugCase.id)}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ flex: 1, color: t.colors.text, fontSize: t.font.small, fontWeight: '700' }} numberOfLines={1}>
-                    {c.title}
+                    {s.debugCase.title}
                   </Text>
-                  <Text style={{ color: t.colors.accent, fontSize: t.font.small, fontWeight: '700' }}>
-                    {Math.round(score * 100)}%
+                  <Text style={{ color: t.colors.accent, fontSize: t.font.small, fontWeight: '800' }}>
+                    {Math.round(s.score * 100)}%
+                  </Text>
+                </View>
+                {s.causeAr && (
+                  <Text style={{ color: t.colors.textMuted, fontSize: t.font.tiny }}>
+                    {tr('journey.rootCause')}: {pick({ ar: s.causeAr, en: s.causeEn ?? s.causeAr })}
+                  </Text>
+                )}
+                {s.fixAr && (
+                  <Text style={{ color: t.colors.textMuted, fontSize: t.font.tiny }} numberOfLines={2}>
+                    {tr('fix.change')}: {pick({ ar: s.fixAr, en: s.fixEn ?? s.fixAr })}
+                  </Text>
+                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <StateBadge state={s.debugCase.state} dark={dark} />
+                  {s.verified && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="shield-checkmark" size={12} color={t.colors.success} />
+                      <Text style={{ color: t.colors.success, fontSize: t.font.tiny, fontWeight: '700' }}>
+                        {tr('verify.result.verified')}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
+                    {new Date(s.date).toLocaleDateString('ar')}
                   </Text>
                 </View>
               </Card>

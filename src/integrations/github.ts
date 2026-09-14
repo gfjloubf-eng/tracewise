@@ -68,6 +68,17 @@ export class GitHubClient {
 
   // ——— عمليات القراءة فقط ———
 
+  listRepos(): Promise<Array<{ full_name: string; private: boolean; updated_at: string }>> {
+    return this.request('/user/repos?sort=pushed&per_page=30');
+  }
+
+  listFiles(owner: string, repo: string, path = '', ref?: string) {
+    const q = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+    return this.request<Array<{ name: string; path: string; type: 'file' | 'dir' }>>(
+      `/repos/${owner}/${repo}/contents/${path}${q}`
+    );
+  }
+
   getRepo(owner: string, repo: string) {
     return this.request<Record<string, unknown>>(`/repos/${owner}/${repo}`);
   }
@@ -100,6 +111,15 @@ export class GitHubClient {
     return this.request<Array<{ number: number; title: string; state: string }>>(
       `/repos/${owner}/${repo}/pulls?state=open&per_page=20`
     );
+  }
+
+  /** فك ترميز محتوى ملف (base64 → نص) */
+  async getFileText(owner: string, repo: string, path: string, ref?: string): Promise<string> {
+    const f = await this.getFile(owner, repo, path, ref);
+    if (f.encoding === 'base64') {
+      return global.atob(f.content.replace(/\n/g, ''));
+    }
+    return f.content;
   }
 
   async getDiff(owner: string, repo: string, sha: string): Promise<string> {

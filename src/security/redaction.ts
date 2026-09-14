@@ -37,13 +37,20 @@ const PATTERNS: Pattern[] = [
     replace: '[REDACTED_JWT]',
   },
   {
+    // توحيد: Bearer [REDACTED_JWT] ← Bearer [REDACTED]
+    kind: 'bearer_token',
+    regex: /\bBearer\s+\[REDACTED_JWT\]/g,
+    replace: `Bearer ${REDACTED}`,
+  },
+  {
     kind: 'authorization_header',
-    regex: /(\bauthorization\s*[:=]\s*(?:bearer|basic|token)\s+)\S+/gi,
+    // (?!\[REDACTED) ⇒ Idempotent: لا يعيد حجب قيمة محجوبة بالفعل
+    regex: /(\bauthorization\s*[:=]\s*(?:bearer|basic|token)\s+)(?!\[REDACTED)\S+/gi,
     replace: `$1${REDACTED}`,
   },
   {
     kind: 'authorization_header',
-    regex: /(\bauthorization\s*[:=]\s*)(?!\s*bearer|\s*basic|\s*token)\S[\S]*/gi,
+    regex: /(\bauthorization\s*[:=]\s*)(?!\s*bearer|\s*basic|\s*token|\[REDACTED)\S[\S]*/gi,
     replace: `$1${REDACTED}`,
   },
   {
@@ -79,13 +86,13 @@ const PATTERNS: Pattern[] = [
   {
     // بيانات اعتماد في رابط — greedy حتى آخر @ قبل المضيف (تغطي كلمات مرور فيها @)
     kind: 'db_credentials',
-    regex: /\b([a-z][a-z0-9+.-]*):\/\/[^\s'"`]*@/gi,
+    regex: /\b([a-z][a-z0-9+.-]*):\/\/(?!\[REDACTED_CREDENTIALS\]@)[^\s'"`]*@/gi,
     replace: (m: RegExpExecArray) => `${m[1]}://[REDACTED_CREDENTIALS]@`,
   },
   {
     kind: 'credential_assignment',
     regex:
-      /(\b(?:api[_-]?key|apikey|access[_-]?token|auth[_-]?token|refresh[_-]?token|secret[_-]?key|client[_-]?secret|app[_-]?secret|private[_-]?key|session[_-]?key|encryption[_-]?key|password|passwd|pwd|db[_-]?password|database[_-]?password)\b\s*[:=]\s*)(['"]?)([^\s'",;}{)\]]+)\2/gi,
+      /(\b(?:api[_-]?key|apikey|access[_-]?token|auth[_-]?token|refresh[_-]?token|secret[_-]?key|client[_-]?secret|app[_-]?secret|private[_-]?key|session[_-]?key|encryption[_-]?key|password|passwd|pwd|db[_-]?password|database[_-]?password)\b\s*[:=]\s*)(['"]?)(?!\[REDACTED\])([^\s'",;}{)\]]+)\2/gi,
     replace: (m: RegExpExecArray) => `${m[1]}${m[2]}${REDACTED}${m[2]}`,
   },
 ];

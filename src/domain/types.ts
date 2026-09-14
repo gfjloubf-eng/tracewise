@@ -84,6 +84,8 @@ export interface DiagnosisResult {
   /** المحرك الذي أنتج النتيجة النهائية */
   engine: 'local' | 'ai';
   fingerprint: ProblemFingerprint;
+  /** رسالة واضحة إذا فشل AI (التحليل المحلي استمر رغم ذلك) */
+  aiNoticeAr?: string;
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high';

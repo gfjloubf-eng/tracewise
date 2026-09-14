@@ -8,7 +8,7 @@ import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { githubClient, GITHUB_READ_PERMISSIONS_AR } from '../../integrations/github';
 
-export function IntegrationsScreen({ dark }: { dark: boolean }) {
+export function IntegrationsScreen({ dark, onBrowse }: { dark: boolean; onBrowse?: () => void }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
   const { settings, updateSettings } = useStore();
@@ -94,7 +94,10 @@ export function IntegrationsScreen({ dark }: { dark: boolean }) {
             )}
           </>
         ) : (
-          <Btn dark={dark} variant="danger" icon="close-circle-outline" label={tr('integrations.disconnect')} onPress={disconnect} />
+          <View style={{ gap: t.spacing(2) }}>
+            <Btn dark={dark} icon="folder-open-outline" label="تصفح المستودعات" onPress={() => onBrowse?.()} />
+            <Btn dark={dark} variant="danger" icon="close-circle-outline" label={tr('integrations.disconnect')} onPress={disconnect} />
+          </View>
         )}
       </Card>
 

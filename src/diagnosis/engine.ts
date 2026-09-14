@@ -13,7 +13,7 @@ import {
 import { assessSeverity } from '../domain/severity';
 import { buildFingerprint } from '../domain/fingerprint';
 import { RULES, DiagnosisRule } from './rules';
-import { analyzeWithAi } from '../ai/gateway';
+import { analyzeWithAi, AiError } from '../ai/gateway';
 
 export interface DiagnosisContext {
   debugCase: DebugCase;
@@ -179,6 +179,7 @@ export async function analyzeCase(
   let engine: 'local' | 'ai' = 'local';
   let rootCauseAr = local[0]?.titleAr;
   let rootCauseEn = local[0]?.titleEn;
+  let aiNoticeAr: string | undefined;
 
   const ai = options.ai;
   if (ai?.enabled && ai.apiKey && ai.sendRedactedData) {
@@ -195,9 +196,13 @@ export async function analyzeCase(
         rootCauseAr = hypotheses[0]?.titleAr;
         rootCauseEn = hypotheses[0]?.titleEn;
       }
-    } catch {
-      // فشل AI لا يكسر التحليل — نبقى على النتائج المحلية
+    } catch (e) {
+      // فشل AI لا يكسر التحليل — نبقى على النتائج المحلية مع إشعار واضح
       engine = 'local';
+      aiNoticeAr =
+        e instanceof AiError
+          ? e.message
+          : 'تعذر الاتصال بالذكاء الاصطناعي — النتائج المعروضة من القواعد المحلية.';
     }
   }
 
@@ -212,6 +217,7 @@ export async function analyzeCase(
     analyzedAt: new Date().toISOString(),
     engine,
     fingerprint,
+    aiNoticeAr,
   };
 
   const top: Hypothesis =

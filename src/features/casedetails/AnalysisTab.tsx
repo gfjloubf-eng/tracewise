@@ -57,6 +57,17 @@ export function AnalysisTab({
         </View>
       </Card>
 
+      {d.aiNoticeAr && (
+        <Card dark={dark} style={{ backgroundColor: t.colors.warningDim, borderColor: t.colors.warningDim }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Ionicons name="cloud-offline-outline" size={15} color={t.colors.warning} />
+            <Text style={{ flex: 1, color: t.colors.warning, fontSize: t.font.tiny, lineHeight: 16 }}>
+              {d.aiNoticeAr}
+            </Text>
+          </View>
+        </Card>
+      )}
+
       <SectionTitle dark={dark} text={tr('analysis.hypotheses')} icon="git-branch-outline" />
       {d.hypotheses.length === 0 && (
         <Card dark={dark}>

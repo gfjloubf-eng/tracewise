@@ -1,16 +1,16 @@
 /**
- * Scanner — اختيار لقطة شاشة + محاولة استخراج الإشارات.
- * OCR اختياري (إن توفر محرك) — والصق النص اليدوي مدعوم دائمًا.
- * كل الناتج قابل للتعديل قبل إضافته كدليل.
+ * Scanner — لقطة شاشة → OCR (إن توفر محرك حقيقي) → استخراج إشارات →
+ * مراجعة/تعديل يدوي → إضافة كدليل أو إنشاء Debug Case جديدة.
  */
 import React, { useState } from 'react';
-import { Alert, Image, Platform, Text, View } from 'react-native';
+import { Alert, Image, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getTheme } from '../../core/theme';
 import { Btn, Card, Field, SectionTitle } from '../../ui/components';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { scanText } from '../../security/scanner';
+import { getAvailableOcrEngine } from '../../integrations/ocr';
 
 export function ScannerScreen({
   dark,
@@ -23,7 +23,7 @@ export function ScannerScreen({
 }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
-  const { cases, addEvidence } = useStore();
+  const { cases, addEvidence, createCase } = useStore();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [rawText, setRawText] = useState('');
@@ -35,6 +35,9 @@ export function ScannerScreen({
   const [caseId, setCaseId] = useState<string>(initialCaseId ?? cases[0]?.id ?? '');
   const [extracted, setExtracted] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+
+  const ocrEngine = getAvailableOcrEngine();
 
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,14 +51,30 @@ export function ScannerScreen({
     });
     if (!res.canceled && res.assets[0]?.uri) {
       setImageUri(res.assets[0].uri);
-      // محاولة OCR عبر محرك قابل للاستبدال — غير متوفر افتراضيًا
-      // (البنية جاهزة لربط tesseract.js على الويب أو محرك أصلي على الجهاز)
-      Alert.alert(tr('scanner.title'), tr('scanner.ocrUnavailable'));
     }
   };
 
-  const extract = () => {
-    const r = scanText(rawText);
+  /** OCR حقيقي عبر المحرك المتاح (يتطلب إنترنت على الويب) */
+  const runOcr = async () => {
+    if (!imageUri || !ocrEngine) return;
+    setOcrBusy(true);
+    try {
+      const text = await ocrEngine.recognize(imageUri);
+      if (text.trim()) {
+        setRawText(text);
+        applyExtraction(text);
+      } else {
+        Alert.alert(tr('scanner.title'), tr('scanner.ocrUnavailable'));
+      }
+    } catch {
+      Alert.alert(tr('scanner.title'), tr('scanner.ocrUnavailable'));
+    } finally {
+      setOcrBusy(false);
+    }
+  };
+
+  const applyExtraction = (text: string) => {
+    const r = scanText(text);
     setErrorMessage(r.errorMessage ?? '');
     setFileName(r.fileName ?? '');
     setLineNumber(r.lineNumber ? String(r.lineNumber) : '');
@@ -64,26 +83,52 @@ export function ScannerScreen({
     setExtracted(true);
   };
 
-  const addAsEvidence = async () => {
-    if (!caseId) return;
-    setBusy(true);
-    const parts = [
+  const extract = () => applyExtraction(rawText);
+
+  const buildContent = () =>
+    [
       errorMessage && `Error: ${errorMessage}`,
       fileName && `File: ${fileName}${lineNumber ? `:${lineNumber}` : ''}`,
       pkg && `Package: ${pkg}`,
       stack && `Stack:\n${stack}`,
-    ].filter(Boolean);
+    ]
+      .filter(Boolean)
+      .join('\n') || rawText;
+
+  const addAsEvidence = async () => {
+    if (!caseId) return;
+    setBusy(true);
     await addEvidence(caseId, {
       type: 'screenshot',
       title: tr('scanner.title'),
-      content: parts.join('\n') || rawText,
+      content: buildContent(),
       imageDataUri: imageUri ?? undefined,
     });
     setBusy(false);
     onAdded(caseId);
   };
 
-  const targetCase = cases.find((c) => c.id === caseId);
+  /** إنشاء Debug Case مباشرة من نتائج الفحص */
+  const createCaseFromScan = async () => {
+    setBusy(true);
+    try {
+      const c = await createCase({
+        title: errorMessage ? errorMessage.slice(0, 80) : tr('scanner.title'),
+        description: `أُنشئت من ${tr('scanner.title')}${fileName ? ` — ${fileName}${lineNumber ? `:${lineNumber}` : ''}` : ''}`,
+        errorMessage: errorMessage || undefined,
+        stackTrace: stack || undefined,
+      });
+      await addEvidence(c.id, {
+        type: 'screenshot',
+        title: tr('scanner.title'),
+        content: buildContent(),
+        imageDataUri: imageUri ?? undefined,
+      });
+      onAdded(c.id);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
@@ -102,16 +147,23 @@ export function ScannerScreen({
           <Text style={{ color: t.colors.textFaint, fontSize: t.font.small }}>{tr('scanner.pick')}</Text>
         )}
         <Btn dark={dark} variant="secondary" icon="image-outline" label={tr('scanner.pick')} onPress={pickImage} />
+        {imageUri && ocrEngine && (
+          <Btn
+            dark={dark}
+            icon="scan-outline"
+            label="OCR — استخراج النص من الصورة"
+            onPress={runOcr}
+            loading={ocrBusy}
+          />
+        )}
+        {imageUri && !ocrEngine && (
+          <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny, textAlign: 'center' }}>
+            {tr('scanner.ocrUnavailable')}
+          </Text>
+        )}
       </Card>
 
-      <Field
-        dark={dark}
-        label={tr('scanner.paste')}
-        value={rawText}
-        onChangeText={setRawText}
-        multiline
-        mono
-      />
+      <Field dark={dark} label={tr('scanner.paste')} value={rawText} onChangeText={setRawText} multiline mono />
       <Btn dark={dark} icon="sparkles-outline" label={tr('scanner.extract')} onPress={extract} disabled={!rawText.trim()} />
 
       {extracted && (
@@ -129,6 +181,16 @@ export function ScannerScreen({
           <Field dark={dark} label={tr('scanner.package')} value={pkg} onChangeText={setPkg} mono />
           <Field dark={dark} label={tr('scanner.stack')} value={stack} onChangeText={setStack} multiline mono />
 
+          {/* إنشاء حالة جديدة مباشرة من الفحص */}
+          <Btn
+            dark={dark}
+            icon="bug-outline"
+            label="إنشاء مشكلة جديدة من الفحص"
+            onPress={createCaseFromScan}
+            loading={busy}
+            disabled={!errorMessage && !rawText.trim()}
+          />
+
           <SectionTitle dark={dark} text={tr('scanner.pickCase')} />
           {cases.map((c) => (
             <Card
@@ -138,7 +200,8 @@ export function ScannerScreen({
               style={{ borderColor: caseId === c.id ? t.colors.primary : t.colors.cardBorder }}
             >
               <Text numberOfLines={1} style={{ color: t.colors.text, fontSize: t.font.small, fontWeight: '600' }}>
-                {caseId === c.id ? '✓ ' : ''}{c.title}
+                {caseId === c.id ? '✓ ' : ''}
+                {c.title}
               </Text>
             </Card>
           ))}
@@ -151,11 +214,6 @@ export function ScannerScreen({
             loading={busy}
             disabled={!caseId || (!errorMessage && !rawText.trim())}
           />
-          {Platform.OS !== 'web' && targetCase && (
-            <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny, textAlign: 'center' }}>
-              {targetCase.title}
-            </Text>
-          )}
         </>
       )}
     </View>

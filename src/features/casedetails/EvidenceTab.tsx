@@ -86,11 +86,26 @@ export function EvidenceTab({ c, dark }: { c: DebugCase; dark: boolean }) {
               {e.imageDataUri && (
                 <Image source={{ uri: e.imageDataUri }} style={{ width: '100%', height: 140, borderRadius: t.radius.md }} resizeMode="cover" />
               )}
-              {!!e.content && (
-                <Text selectable style={{ color: t.colors.textMuted, fontSize: t.font.small, fontFamily: 'monospace', writingDirection: 'auto', lineHeight: 20 }}>
-                  {e.content}
-                </Text>
-              )}
+              {!!e.content &&
+                (() => {
+                  // أدلة الأكواد/السجلات/المسارات: LTR ثابت — بقية النصوص تتبع اللغة
+                  const codeLike = ['code', 'stacktrace', 'log', 'error', 'screenshot'].includes(e.type);
+                  return (
+                    <Text
+                      selectable
+                      style={{
+                        color: t.colors.textMuted,
+                        fontSize: t.font.small,
+                        fontFamily: codeLike ? 'monospace' : undefined,
+                        writingDirection: codeLike ? 'ltr' : 'auto',
+                        textAlign: codeLike ? 'left' : undefined,
+                        lineHeight: 20,
+                      }}
+                    >
+                      {e.content}
+                    </Text>
+                  );
+                })()}
               {e.source && <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>{e.source}</Text>}
               {e.redactionCount > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

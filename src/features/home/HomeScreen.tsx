@@ -27,8 +27,13 @@ export function HomeScreen({
   const { t: tr } = useI18n();
   const { cases, analyzingCaseId } = useStore();
 
-  const openCount = cases.filter((c) => !['closed'].includes(c.state)).length;
-  const verifiedCount = cases.filter((c) => c.state === 'verified' || c.state === 'closed').length;
+  // "مفتوحة" = كل ما لم يُوثّق حلّه بعد (مفتوحة/تحليل/خطة/مرجح)
+  const openCount = cases.filter((c) =>
+    ['open', 'analyzing', 'fix_plan', 'likely_resolved'].includes(c.state)
+  ).length;
+  const verifiedCount = cases.filter((c) =>
+    c.verifications.some((v) => v.result === 'verified')
+  ).length;
   const recent = [...cases]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 5);

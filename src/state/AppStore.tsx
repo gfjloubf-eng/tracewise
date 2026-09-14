@@ -97,6 +97,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [analyzingCaseId, setAnalyzingCaseId] = useState<string | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  // مرآة متزامنة للحالات: تُحدَّث لحظيًا داخل persist/mutate (آمنة ضد السباقات)
+  const casesRef = useRef<DebugCase[]>(cases);
 
   const pushLog = useCallback((entry: SecurityLogEntry) => {
     setSecurityLog((prev) => {
@@ -120,14 +122,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSecurityLog(savedLog ?? []);
 
         if (savedCases && savedCases.length > 0) {
+          casesRef.current = savedCases;
           setCases(savedCases);
         } else {
           const demo = buildDemoCases();
+          casesRef.current = demo;
           setCases(demo);
           await saveJson(KEYS.CASES, demo);
         }
       } catch {
         const demo = buildDemoCases();
+        casesRef.current = demo;
         setCases(demo);
       } finally {
         setReady(true);
@@ -135,20 +140,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const persistCases = useCallback((next: DebugCase[]) => {
+  const persistCases = useCallback((updater: DebugCase[] | ((prev: DebugCase[]) => DebugCase[])) => {
+    const next = typeof updater === 'function' ? updater(casesRef.current) : updater;
+    casesRef.current = next;
     setCases(next);
     void saveJson(KEYS.CASES, next);
   }, []);
 
   const mutateCase = useCallback(
     (caseId: string, fn: (c: DebugCase) => DebugCase) => {
-      setCases((prev) => {
-        const next = prev.map((c) =>
-          c.id === caseId ? { ...fn(c), updatedAt: new Date().toISOString() } : c
-        );
-        void saveJson(KEYS.CASES, next);
-        return next;
-      });
+      const next = casesRef.current.map((c) =>
+        c.id === caseId ? { ...fn(c), updatedAt: new Date().toISOString() } : c
+      );
+      casesRef.current = next;
+      setCases(next);
+      void saveJson(KEYS.CASES, next);
     },
     []
   );
@@ -198,7 +204,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         tags: [],
         fingerprint,
       };
-      persistCases([debugCase, ...cases]);
+      persistCases((prev) => [debugCase, ...prev]);
       if (redactionTotal > 0) {
         pushLog(
           logEntry(
@@ -211,7 +217,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       return debugCase;
     },
-    [cases, persistCases, pushLog]
+    [persistCases, pushLog]
   );
 
   // ——— إضافة دليل (مع الحجب) ———
@@ -257,7 +263,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // ——— التحليل: قواعد محلية أولًا ثم AI اختياريًا ———
   const runAnalysis = useCallback(
     async (caseId: string) => {
-      const target = cases.find((c) => c.id === caseId);
+      const target = casesRef.current.find((c) => c.id === caseId);
       if (!target) return;
       setAnalyzingCaseId(caseId);
       mutateCase(caseId, (c) => ({ ...c, state: 'analyzing' }));
@@ -290,12 +296,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               'Case data (redacted) sent to AI provider'
             )
           );
+        } else if (diagnosis.aiNoticeAr) {
+          pushLog(
+            logEntry('outbound', `تعذر استخدام الذكاء الاصطناعي: ${diagnosis.aiNoticeAr}`, 'AI unavailable — local results used')
+          );
         }
       } finally {
         setAnalyzingCaseId(null);
       }
     },
-    [cases, mutateCase, pushLog]
+    [mutateCase, pushLog]
   );
 
   const markFixApplied = useCallback(
@@ -343,24 +353,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const changeState = useCallback(
     async (caseId: string, to: CaseState): Promise<boolean> => {
-      const target = cases.find((c) => c.id === caseId);
+      const target = casesRef.current.find((c) => c.id === caseId);
       if (!target || !canTransition(target.state, to)) return false;
       mutateCase(caseId, (c) => ({ ...c, state: to }));
       return true;
     },
-    [cases, mutateCase]
+    [mutateCase]
   );
 
   const deleteCase = useCallback(
     async (caseId: string) => {
-      persistCases(cases.filter((c) => c.id !== caseId));
+      persistCases((prev) => prev.filter((c) => c.id !== caseId));
     },
-    [cases, persistCases]
+    [persistCases]
   );
 
   const deleteDemoCases = useCallback(async () => {
-    persistCases(cases.filter((c) => !c.isDemo));
-  }, [cases, persistCases]);
+    persistCases((prev) => prev.filter((c) => !c.isDemo));
+  }, [persistCases]);
 
   const updateSettings = useCallback(
     async (patch: Partial<AppSettings>) => {
@@ -386,7 +396,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const runSecurityScan = useCallback(async () => {
     let scanned = 0;
     let redacted = 0;
-    const next = cases.map((c) => {
+    const next = casesRef.current.map((c) => {
       let changed = false;
       const scan = (v?: string) => {
         if (!v) return v;
@@ -426,15 +436,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       )
     );
     return { scanned, redacted };
-  }, [cases, persistCases, pushLog]);
+  }, [persistCases, pushLog]);
 
   const exportData = useCallback((): string => {
     return JSON.stringify(
-      { app: 'TRACEWISE', version: 1, exportedAt: new Date().toISOString(), cases, settings },
+      {
+        app: 'TRACEWISE',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        cases: casesRef.current,
+        settings: settingsRef.current,
+      },
       null,
       2
     );
-  }, [cases, settings]);
+  }, []);
 
   const importData = useCallback(
     async (json: string): Promise<boolean> => {

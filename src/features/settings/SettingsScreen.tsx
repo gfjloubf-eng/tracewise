@@ -6,6 +6,9 @@ import { getTheme } from '../../core/theme';
 import { Btn, Card, Chip, Field, SectionTitle, ToggleRow } from '../../ui/components';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
+import { testConnection } from '../../ai/gateway';
+import { secureGet } from '../../storage/secureStorage';
+import { BottomModal, } from '../../ui/components';
 
 export function SettingsScreen({ dark }: { dark: boolean }) {
   const t = getTheme(dark);
@@ -15,6 +18,9 @@ export function SettingsScreen({ dark }: { dark: boolean }) {
   const [aiKey, setAiKey] = useState('');
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
+  const [consentVisible, setConsentVisible] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string>('');
 
   const doExport = async () => {
     const data = exportData();
@@ -108,8 +114,45 @@ export function SettingsScreen({ dark }: { dark: boolean }) {
               dark={dark}
               label={tr('settings.aiSend')}
               value={settings.ai.sendRedactedData}
-              onValueChange={(v) => void updateSettings({ ai: { ...settings.ai, sendRedactedData: v } })}
+              onValueChange={(v) => {
+                if (v) setConsentVisible(true);
+                else void updateSettings({ ai: { ...settings.ai, sendRedactedData: false } });
+              }}
             />
+            {/* اختبار الاتصال */}
+            <Btn
+              dark={dark}
+              variant="secondary"
+              icon="pulse-outline"
+              label="اختبار الاتصال بالمزود"
+              loading={testing}
+              onPress={async () => {
+                setTesting(true);
+                setTestResult('');
+                const key = await secureGet('tw_ai_key');
+                if (!key) {
+                  setTestResult('أدخل مفتاح API أولًا.');
+                } else {
+                  const r = await testConnection({
+                    baseUrl: settings.ai.baseUrl,
+                    model: settings.ai.model,
+                    apiKey: key,
+                  });
+                  setTestResult(r.ok ? `الاتصال ناجح ✓ (${r.model})` : r.messageAr);
+                }
+                setTesting(false);
+              }}
+            />
+            {testResult ? (
+              <Text
+                style={{
+                  color: testResult.includes('✓') ? t.colors.success : t.colors.danger,
+                  fontSize: t.font.small,
+                }}
+              >
+                {testResult}
+              </Text>
+            ) : null}
             <Field
               dark={dark}
               label={tr('settings.aiBaseUrl')}
@@ -165,6 +208,24 @@ export function SettingsScreen({ dark }: { dark: boolean }) {
       <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny, textAlign: 'center' }}>
         TRACEWISE v0.1.0 — {tr('app.tagline')}
       </Text>
+
+      {/* موافقة صريحة قبل إرسال أي بيانات */}
+      <BottomModal visible={consentVisible} onClose={() => setConsentVisible(false)} dark={dark} title="موافقة صريحة مطلوبة">
+        <Text style={{ color: t.colors.text, fontSize: t.font.small, lineHeight: 20 }}>
+          عند التفعيل: ستُرسل نصوص حالتك إلى مزود الذكاء الاصطناعي بعد حجب الأسرار تلقائيًا (Tokens، كلمات مرور، مفاتيح).
+          إذا بقي أي سر بعد الحجب يُرفض الطلب بالكامل. لا تُرسل صور، ولا يُتخذ أي قرار تحقق بناءً على AI.
+        </Text>
+        <Btn
+          dark={dark}
+          label="أوافق — فعّل الإرسال"
+          icon="checkmark-circle-outline"
+          onPress={async () => {
+            await updateSettings({ ai: { ...settings.ai, sendRedactedData: true } });
+            setConsentVisible(false);
+          }}
+        />
+        <Btn dark={dark} variant="secondary" label={tr('common.cancel')} onPress={() => setConsentVisible(false)} />
+      </BottomModal>
     </View>
   );
 }
