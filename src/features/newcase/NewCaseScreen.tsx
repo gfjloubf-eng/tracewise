@@ -41,6 +41,8 @@ export function NewCaseScreen({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittedRef = useRef(false);
   const mountedRef = useRef(true);
+  /** لقطة آخر محتوى محفوظ — تمنع إعادة الجدولة/الحفظ عند غياب التغير */
+  const lastSavedSnapshotRef = useRef<string | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -64,6 +66,7 @@ export function NewCaseScreen({
         setStep(st);
         setLastSavedAt(updatedAt);
         setRestored(true);
+        lastSavedSnapshotRef.current = JSON.stringify({ ...rest, projectId: pid, step: st });
       }
       hydratedRef.current = true;
     });
@@ -76,12 +79,16 @@ export function NewCaseScreen({
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (!draftHasContent(form)) return;
+    const snapshot = JSON.stringify({ ...form, projectId, step });
+    if (snapshot === lastSavedSnapshotRef.current) return; // لا تغير منذ آخر حفظ
     setSaveState('saving');
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      if (submittedRef.current) return; // لا إحياء للمسودة بعد الإنشاء
+      // لا عمل بعد التفكيك، ولا إحياء للمسودة بعد الإنشاء
+      if (!mountedRef.current || submittedRef.current) return;
       void saveNewCaseDraft({ ...form, projectId, step }).then((saved) => {
         if (!mountedRef.current) return;
+        lastSavedSnapshotRef.current = snapshot;
         setSaveState('saved');
         setLastSavedAt(saved.updatedAt);
       });
@@ -92,9 +99,11 @@ export function NewCaseScreen({
   }, [form, projectId, step]);
 
   const saveDraftNow = async () => {
+    const snapshot = JSON.stringify({ ...form, projectId, step });
     setSaveState('saving');
     const saved = await saveNewCaseDraft({ ...form, projectId, step });
     if (!mountedRef.current) return;
+    lastSavedSnapshotRef.current = snapshot;
     setSaveState('saved');
     setLastSavedAt(saved.updatedAt);
   };
@@ -124,6 +133,7 @@ export function NewCaseScreen({
         onPress: () => {
           submittedRef.current = false;
           void deleteNewCaseDraft();
+          lastSavedSnapshotRef.current = null;
           setForm({ title: '', description: '' });
           setProjectId(undefined);
           setStep(0);

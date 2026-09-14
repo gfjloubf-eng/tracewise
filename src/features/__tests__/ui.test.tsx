@@ -58,6 +58,15 @@ describe('تبديل اللغة — English بدون إعادة بناء', () =>
 });
 
 describe('NewCaseScreen — معالج الإنشاء', () => {
+  // مؤقتات زائفة: مؤقت debounce الخاص بالمسودة لا يطلق إلا بتحكم الاختبار —
+  // يزيل تصادم setState غير المتزامن مع نوافذ act (سلوك حقيقي، توقيت حتمي)
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'queueMicrotask', 'nextTick', 'performance', 'requestAnimationFrame', 'hrtime'] });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('يمنع المتابعة بدون عنوان ثم ينشئ المشكلة', async () => {
     const onCreated = jest.fn();
     const r = await wrap(

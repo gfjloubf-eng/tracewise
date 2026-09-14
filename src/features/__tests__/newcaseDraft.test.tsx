@@ -2,12 +2,15 @@
  * نظام مسودة «مشكلة جديدة» — end-to-end:
  * إدخال ← حفظ تلقائي ← إلغاء ← (إغلاق التطبيق) ← إعادة فتح ← استعادة ← إنشاء ← حذف المسودة.
  *
- * ملاحظة منهجية: الرحلة مقسمة على اختبارين يحاكي كلٌّ منهما «جلسة تطبيق» مستقلة
- * (الاستعادة تحدث عند الفتح من التخزين — كما بعد إغلاق التطبيق فعليًا)،
- * لأن عرضين متزامنين مع عمليات async داخل اختبار واحد يفسدان طابور act في RTL v14.
+ * المنهجية:
+ * - الرحلة مقسمة على جلستَي تطبيق مستقلتين (الاستعادة تحدث عند الفتح من التخزين —
+ *   كما بعد إغلاق التطبيق فعليًا).
+ * - مؤقتات زائفة (setTimeout فقط) لتحكم حتمي بـdebounce الحفظ التلقائي:
+ *   لا setState شارد خارج act، والاختبار يثبت التوقيت نفسه (لا حفظ قبل 800ms).
+ *   setImmediate/queueMicrotask حقيقية لتبقى وعود AsyncStorage وReact scheduler طبيعية.
  */
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StoreProvider } from '../../state/AppStore';
 import { I18nProvider } from '../../core/i18n/I18nProvider';
@@ -28,11 +31,30 @@ async function wrap(ui: React.ReactNode) {
 }
 const noop = () => undefined;
 const baseDraft = { title: 'مشكلة الشبكة', description: 'الطلبات تفشل ليلًا', step: 0 };
-/** انتظار الحفظ التلقائي (debounce = 800ms) دون RTL — فحص مباشر للتخزين */
-const settle = (ms = 1300) => new Promise((res) => setTimeout(res, ms));
+
+/** تمرير سلاسل الوعود (AsyncStorage) حتى تستقر — داخل act */
+async function flush() {
+  await act(async () => {
+    await new Promise((res) => setImmediate(res));
+  });
+}
+/** تحريك ساعة الـdebounce ثم تمرير الوعود — داخل act (لا تحديثات شاردة) */
+async function advance(ms: number) {
+  await act(async () => {
+    jest.advanceTimersByTime(ms);
+    await new Promise((res) => setImmediate(res));
+  });
+}
 
 beforeEach(async () => {
+  jest.useFakeTimers({
+    doNotFake: ['setImmediate', 'queueMicrotask', 'nextTick', 'performance', 'requestAnimationFrame', 'hrtime'],
+  });
   await AsyncStorage.clear();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe('Draft Store — حفظ / تحديث / حذف / أمان', () => {
@@ -89,7 +111,7 @@ describe('Draft Store — حفظ / تحديث / حذف / أمان', () => {
 });
 
 describe('الجلسة 1 — إدخال ← حفظ تلقائي ← إلغاء (المسودة تبقى)', () => {
-  it('الحفظ التلقائي يخزن أثناء الكتابة، والإلغاء لا يحذف المسودة', async () => {
+  it('الحفظ التلقائي debounce فعلي: لا حفظ قبل 800ms، ثم يُحفظ، والإلغاء لا يحذف المسودة', async () => {
     const onCancel = jest.fn();
     const r = await wrap(<NewCaseScreen dark onCreated={noop} onCancel={onCancel} onScan={noop} />);
 
@@ -97,14 +119,18 @@ describe('الجلسة 1 — إدخال ← حفظ تلقائي ← إلغاء (
     expect(await loadNewCaseDraft()).toBeNull();
 
     await fireEvent.changeText(r.getByPlaceholderText(TITLE_PLACEHOLDER), 'مشكلة الشبكة');
-    await settle(); // debounce 800ms + هامش
 
+    // قبل انقضاء الـdebounce: لا شيء في التخزين، لكن الحالة «جاري الحفظ…»
+    await advance(700);
+    expect(await loadNewCaseDraft()).toBeNull();
+    expect(r.getByText('جاري الحفظ…')).toBeTruthy();
+
+    // بعد 800ms: حُفظت
+    await advance(150);
     const d = await loadNewCaseDraft();
     expect(d?.title).toBe('مشكلة الشبكة');
     expect(d?.updatedAt).toBeTruthy();
-
-    // مؤشر الحالة للمستخدم
-    expect(await r.findByText('تم حفظ المسودة ✓')).toBeTruthy();
+    expect(r.getByText('تم حفظ المسودة ✓')).toBeTruthy();
 
     // الإلغاء — لا حذف تلقائي
     await fireEvent.press(r.getByText('إلغاء'));
@@ -112,23 +138,20 @@ describe('الجلسة 1 — إدخال ← حفظ تلقائي ← إلغاء (
     expect((await loadNewCaseDraft())!.title).toBe('مشكلة الشبكة');
   });
 
-  it('حفظ يدوي عبر زر «💾 حفظ المسودة»', async () => {
+  it('حفظ يدوي عبر زر «💾 حفظ المسودة» — فوري بدون انتظار debounce', async () => {
     const r = await wrap(<NewCaseScreen dark onCreated={noop} onCancel={noop} onScan={noop} />);
     await fireEvent.changeText(r.getByPlaceholderText(TITLE_PLACEHOLDER), 'حفظ يدوي');
     await fireEvent.press(r.getByText('💾 حفظ المسودة'));
-    await waitFor(
-      async () => {
-        const d = await loadNewCaseDraft();
-        expect(d?.title).toBe('حفظ يدوي');
-      },
-      { timeout: 4000 }
-    );
-    expect(await r.findByText('تم حفظ المسودة ✓')).toBeTruthy();
+    await flush();
+
+    const d = await loadNewCaseDraft();
+    expect(d?.title).toBe('حفظ يدوي');
+    expect(r.getByText('تم حفظ المسودة ✓')).toBeTruthy();
   });
 });
 
 describe('الجلسة 2 — إعادة الفتح: استعادة ← إنشاء ← حذف المسودة', () => {
-  it('يستعيد المسودة: الحقول + خطوة الـWizard + شريط التنبيه + آخر حفظ', async () => {
+  it('يستعيد المسودة: خطوة الـWizard + شريط التنبيه + آخر حفظ (بدون إعادة حفظ عبثية)', async () => {
     await saveNewCaseDraft({ ...baseDraft, errorMessage: 'HTTP 500', step: 2 });
     const r = await wrap(<NewCaseScreen dark onCreated={noop} onCancel={noop} onScan={noop} />);
 
@@ -136,10 +159,9 @@ describe('الجلسة 2 — إعادة الفتح: استعادة ← إنشا�
     expect(r.getByText('بدء مشكلة جديدة')).toBeTruthy();
     // step=2 → «الخطوة 3 من 4»
     expect(r.getByText('الخطوة 3 من 4')).toBeTruthy();
-    // بعد الاستعادة يعمل الحفظ التلقائي مجددًا وتظهر حالة الحفظ
-    expect(await r.findByText('تم حفظ المسودة ✓', {}, { timeout: 4000 })).toBeTruthy();
-    // والخطوة المستعادة ما زالت كما هي (لم يقفز الـWizard)
-    expect(r.getByText('الخطوة 3 من 4')).toBeTruthy();
+    // الاستعادة وحدها لا تطلق حفظًا جديدًا — تبقى حالة «آخر حفظ»
+    await advance(1000);
+    expect(r.getByText(/آخر حفظ:/)).toBeTruthy();
   });
 
   it('الاستعادة في الخطوة الأولى تعيد العنوان، وإكمال المعالج يحذف المسودة بعد الإنشاء', async () => {
@@ -158,8 +180,8 @@ describe('الجلسة 2 — إعادة الفتح: استعادة ← إنشا�
     await fireEvent.press(r.getByText('إنشاء المشكلة'));
     await waitFor(() => expect(onCreated).toHaveBeenCalled(), { timeout: 5000 });
 
-    // المسودة حُذفت بعد نجاح الإنشاء — ولا تُبعث من أي مؤجل
-    await settle(1300);
+    // المسودة حُذفت بعد نجاح الإنشاء — وأي مؤقت مؤجل لا يبعثها
+    await advance(1300);
     expect(await loadNewCaseDraft()).toBeNull();
   });
 });
