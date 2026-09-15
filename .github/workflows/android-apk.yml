@@ -36,14 +36,28 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --no-install --clean
 
-      - name: Build debug APK
+      - name: Build standalone release APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Upload APK artifact
+      - name: Verify standalone APK contains the bundled JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          unzip -l "$apk" > apk-contents.txt
+          grep -Eq '(^|[[:space:]])assets/index\.android\.bundle([[:space:]]|$)' apk-contents.txt
+          echo "Verified standalone APK: $apk"
+          echo "Verified bundled React Native JavaScript: assets/index.android.bundle"
+          if command -v apksigner >/dev/null 2>&1; then
+            apksigner verify --verbose "$apk"
+          fi
+
+      - name: Upload standalone APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tracewise-android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: tracewise-standalone-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
