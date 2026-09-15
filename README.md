@@ -82,6 +82,8 @@ npm run apk          # ينتج android/app/build/outputs/apk/debug/app-debug.ap
 npm run apk:release  # نسخة release (تتطلب keystore)
 ```
 
+تتحقق أوامر البناء الآن من Java 17+ قبل البدء، وتستخدم `gradlew.bat` تلقائيًا على Windows و`./gradlew` على macOS/Linux. إذا ظهر خطأ Java 11، اضبط `JAVA_HOME` إلى تثبيت JDK 17 أو أحدث ثم أعد الأمر. لا يُعد البناء ناجحًا إلا بعد ظهور رسالة الإكمال ووجود ملف APK في المسار المطبوع.
+
 **أو عبر GitHub Actions (بدون أدوات محلية):**
 انسخ `ci/android-apk.yml` إلى `.github/workflows/android-apk.yml` في المستودع،
 وسيُبني APK تلقائيًا عند كل push ويمكنك تنزيله من تبويب Actions → Artifacts.

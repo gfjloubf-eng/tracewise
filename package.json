@@ -39,8 +39,8 @@
     "web": "expo start --web --port 8081",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "apk": "expo prebuild --platform android --no-install --clean && cd android && ./gradlew assembleDebug",
-    "apk:release": "expo prebuild --platform android --no-install --clean && cd android && ./gradlew assembleRelease"
+    "apk": "node scripts/build-android.js",
+    "apk:release": "node scripts/build-android.js --release"
   },
   "private": true,
   "jest": {
