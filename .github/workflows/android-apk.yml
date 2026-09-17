@@ -38,7 +38,7 @@ jobs:
 
       - name: Build standalone release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: timeout --signal=TERM --kill-after=60s 20m ./gradlew assembleRelease --no-daemon --console=plain --stacktrace
 
       - name: Verify standalone APK contains the bundled JavaScript
         shell: bash
