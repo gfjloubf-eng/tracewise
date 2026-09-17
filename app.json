@@ -34,6 +34,10 @@
     },
     "backgroundColor": "#0B1220",
     "primaryColor": "#0B1220",
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
     "splash": {
       "backgroundColor": "#0B1220",
       "resizeMode": "contain"

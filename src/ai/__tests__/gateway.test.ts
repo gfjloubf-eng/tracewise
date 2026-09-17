@@ -42,10 +42,43 @@ describe('AI Gateway', () => {
     if (!r.ok) expect(r.messageAr).toContain('حد الطلبات');
   });
 
-  it('testConnection: نجاح', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 200 } as Response);
+  it('testConnection: نجاح بعد استلام completion حقيقي عبر POST', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: 'OK' } }] }),
+    } as unknown as Response);
     const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'gpt-test', apiKey: 'k' });
     expect(r.ok).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://x.test/v1/chat/completions',
+      expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer k' }) })
+    );
+  });
+
+  it('testConnection: موديل غير صالح → فشل 4xx', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: false, status: 400 } as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'bad-model', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('400');
+  });
+
+  it('testConnection: مفتاح غير صالح → فشل مصادقة', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: false, status: 403 } as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'bad' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('مفتاح API');
+  });
+
+  it('testConnection: HTTP 200 بلا completion → فشل استجابة غير صالحة', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [] }),
+    } as unknown as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('استجابة غير متوقعة');
   });
 
   it('analyzeWithAi: 429 → AiError rate_limited مع Retry-After', async () => {

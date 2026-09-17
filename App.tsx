@@ -30,6 +30,7 @@ import { IntegrationsScreen } from './src/features/integrations/IntegrationsScre
 import { RepoBrowserScreen } from './src/features/integrations/RepoBrowserScreen';
 import { ProjectsScreen } from './src/features/projects/ProjectsScreen';
 import { SettingsScreen } from './src/features/settings/SettingsScreen';
+import { UpdatesScreen } from './src/features/updates/UpdatesScreen';
 import { AboutScreen } from './src/features/about/AboutScreen';
 import { ScannerScreen } from './src/features/scanner/ScannerScreen';
 import { CaseDetailsScreen } from './src/features/casedetails/CaseDetailsScreen';
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   GitHubBrowser: undefined;
   Projects: undefined;
   Settings: undefined;
+  Updates: undefined;
   About: undefined;
 };
 
@@ -144,6 +146,7 @@ function MoreScreen({ dark, navigation }: { dark: boolean; navigation: { navigat
     { icon: 'shield-checkmark-outline', label: tr('security.title'), target: 'Security' },
     { icon: 'git-branch-outline', label: tr('integrations.title'), target: 'Integrations' },
     { icon: 'settings-outline', label: tr('settings.title'), target: 'Settings' },
+    { icon: 'cloud-download-outline', label: tr('updates.title'), target: 'Updates' },
     { icon: 'information-circle-outline', label: tr('about.title'), target: 'About' },
   ];
   return (
@@ -324,7 +327,14 @@ function RootNavigator() {
         <Stack.Screen name="Settings">
           {({ navigation }) => (
             <SubScreen title={tr('settings.title')} dark={dark} onBack={() => navigation.goBack()}>
-              <SettingsScreen dark={dark} />
+              <SettingsScreen dark={dark} onOpenUpdates={() => navigation.navigate('Updates')} />
+            </SubScreen>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Updates">
+          {({ navigation }) => (
+            <SubScreen title={tr('updates.title')} dark={dark} onBack={() => navigation.goBack()}>
+              <UpdatesScreen dark={dark} />
             </SubScreen>
           )}
         </Stack.Screen>

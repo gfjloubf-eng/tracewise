@@ -10,7 +10,7 @@ import { testConnection } from '../../ai/gateway';
 import { secureGet } from '../../storage/secureStorage';
 import { BottomModal, } from '../../ui/components';
 
-export function SettingsScreen({ dark }: { dark: boolean }) {
+export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenUpdates?: () => void }) {
   const t = getTheme(dark);
   const { t: tr, lang } = useI18n();
   const { settings, updateSettings, setAiApiKey, exportData, importData, deleteDemoCases, cases } = useStore();
@@ -57,6 +57,7 @@ export function SettingsScreen({ dark }: { dark: boolean }) {
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('settings.title')}
       </Text>
+      <Btn dark={dark} variant="secondary" icon="cloud-download-outline" label={tr('updates.open')} onPress={onOpenUpdates ?? (() => undefined)} />
 
       {/* اللغة */}
       <SectionTitle dark={dark} text={tr('settings.language')} icon="language-outline" />

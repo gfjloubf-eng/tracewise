@@ -132,33 +132,52 @@ export async function testConnection(
   config: AiConfig,
   timeoutMs = 10000
 ): Promise<{ ok: true; model: string } | { ok: false; messageAr: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let res: Response;
-    try {
-      res = await fetch(`${config.baseUrl.replace(/\/$/, '')}/models`, {
-        headers: { Authorization: `Bearer ${config.apiKey}` },
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    if (res.ok) {
-      return { ok: true, model: config.model };
-    }
+    const res = await fetch(`${config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        temperature: 0,
+        messages: [{ role: 'user', content: 'Reply with the single word OK.' }],
+      }),
+      signal: controller.signal,
+    });
     if (res.status === 401 || res.status === 403) {
       return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.auth };
     }
     if (res.status === 429) {
       return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.rate_limited };
     }
-    return { ok: false, messageAr: `HTTP ${res.status}` };
+    if (res.status >= 500) {
+      return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.server };
+    }
+    if (!res.ok) {
+      return { ok: false, messageAr: `HTTP ${res.status}` };
+    }
+    let data: unknown;
+    try {
+      data = await res.json();
+    } catch {
+      return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.bad_response };
+    }
+    const content = (data as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.bad_response };
+    }
+    return { ok: true, model: config.model };
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') {
       return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.timeout };
     }
     return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.network };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
