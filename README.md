@@ -48,6 +48,21 @@
 | الذاكرة | تظهر تلقائيًا عند الإنشاء وفي تبويب الرحلة مع شارة موثوقية |
 | التحليل | التغييرات الحديثة ترفع ثقة الفرضيات المرتبطة |
 
+## بناء Release APK — سحابيًا بالكامل (GitHub Actions)
+
+لا يتطلب البناء أي أدوات محلية (لا npm/Gradle/Android Studio/Metro على جهازك).
+
+- **المسار**: push إلى `arena/01a09d49-tracewise` ← workflow «Android APK» على `ubuntu-latest`:
+  Node 22 → JDK 17 → `npm ci` → `expo prebuild` → `./gradlew assembleRelease` (مقيد بـ20 دقيقة) ← تحقق ← Artifact.
+- **Artifact**: `tracewise-standalone-apk` ويحوي `app-release.apk` — إصدار release مستقل:
+  حزمة JavaScript مضمّنة داخل APK (`assets/index.android.bundle`)، لا يحتاج Metro، قابل للتثبيت المباشر على Android.
+- **التحقق المضمّن في البناء**: وجود الملف وحجمه + وجود الـbundle داخله + فحص `apksigner` عند توفره.
+- **التوقيع**: مفتاح debug المولّد تلقائيًا في CI (سلوك Expo الافتراضي لـassembleRelease) — صالح للتثبيت الاختباري؛
+  للتوزيع الرسمي يلزم keystore خاص (خطوة لاحقة اختيارية).
+- **التنزيل**: من صفحة الـRun ← Artifacts ← `tracewise-standalone-apk`.
+
+> ملاحظة: EAS Build غير مستخدم لأنه يتطلب `EXPO_TOKEN` (سر) — والسياسة المعتمدة: صفر أسرار في المستودع/CI.
+
 ## البنية (Clean Architecture)
 
 ```
