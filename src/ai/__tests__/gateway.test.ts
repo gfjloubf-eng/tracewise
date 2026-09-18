@@ -113,4 +113,64 @@ describe('AI Gateway', () => {
     expect(e.kind).toBe('timeout');
     expect(e).toBeInstanceOf(Error);
   });
+
+  it('testConnection: 403 → رسالة مفتاح مرفوض (مثل 401)', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: false, status: 403 } as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('مفتاح API');
+  });
+
+  it('testConnection: 5xx → رسالة خطأ خادم المزود', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: false, status: 503 } as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('خادم المزود');
+  });
+
+  it('testConnection: timeout (AbortError) → رسالة مهلة', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('مهلة');
+  });
+
+  it('testConnection: فشل شبكة → رسالة تعذر الوصول', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(new TypeError('Network request failed'));
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toContain('تعذر الوصول');
+  });
+
+  it('testConnection: JSON تالف بجسم 200 → استجابة غير صالحة (لا «تم الاتصال»)', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token');
+      },
+    } as unknown as Response);
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+  });
+
+  it('لا يسجل API key في console أثناء اختبار الاتصال', async () => {
+    const logs: string[] = [];
+    const logSpy = jest.spyOn(console, 'log').mockImplementation((...a) => logs.push(String(a)));
+    const errSpy = jest.spyOn(console, 'error').mockImplementation((...a) => logs.push(String(a)));
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation((...a) => logs.push(String(a)));
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: 'OK' } }] }),
+    } as unknown as Response);
+    const secretKey = 'test-key-do-not-log-12345';
+    const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: secretKey });
+    expect(r.ok).toBe(true);
+    expect(logs.join(' ')).not.toContain(secretKey);
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
 });

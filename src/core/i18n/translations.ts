@@ -313,6 +313,15 @@ export const ar: Dict = {
   'updates.releaseCurrent': 'الإصدار الحالي',
   'updates.releaseCurrentBody': 'إصلاح اختبار اتصال المزود عبر completion حقيقي، وإضافة مركز تحديثات صادق وقابل للتهيئة.',
   'updates.nativeNote': 'تغييرات Native أو Expo SDK أو الأذونات تحتاج إصدار APK/بناء جديد، ولا يمكن لـ OTA استبدالها.',
+  'updates.kindOta': 'تحديث OTA — JavaScript/أصول فقط، بدون إعادة تثبيت',
+  'updates.kindApk': 'تحديث APK — تغيير Native يتطلب بناءً جديدًا',
+  'updates.download': 'تنزيل التحديث',
+  'updates.downloading': 'جارٍ التنزيل…',
+  'updates.readyToRestart': 'تم تنزيل التحديث والتحقق من سلامته — أعد التشغيل للتطبيق.',
+  'updates.restartNow': 'إعادة التشغيل الآن',
+  'updates.size': 'حجم التحديث',
+  'updates.lastCheck': 'آخر فحص',
+  'updates.apkNeeded': 'التحديث المتاح يتطلب إصدار APK جديدًا (تغيير Native) — لا يمكن تنزيله من داخل التطبيق.',
 
   // حول
   'about.title': 'حول TRACEWISE',
@@ -694,6 +703,15 @@ export const en: Dict = {
   'updates.releaseCurrent': 'Current release',
   'updates.releaseCurrentBody': 'Fixed provider connectivity testing to require a real completion and added an honest, configurable updates center.',
   'updates.nativeNote': 'Native, Expo SDK, or permission changes require a new APK/build; OTA cannot replace them.',
+  'updates.kindOta': 'OTA update — JavaScript/assets only, no reinstall',
+  'updates.kindApk': 'APK update — native change requires a new build',
+  'updates.download': 'Download update',
+  'updates.downloading': 'Downloading…',
+  'updates.readyToRestart': 'Update downloaded and verified — restart to apply.',
+  'updates.restartNow': 'Restart now',
+  'updates.size': 'Update size',
+  'updates.lastCheck': 'Last check',
+  'updates.apkNeeded': 'The available update requires a new APK (native change) — it cannot be downloaded in-app.',
 
   'about.title': 'About TRACEWISE',
   'about.body':

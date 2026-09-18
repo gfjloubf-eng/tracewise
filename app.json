@@ -55,7 +55,8 @@
         {
           "backgroundColor": "#0B1220"
         }
-      ]
+      ],
+      "./plugins/withGradleTuning"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
