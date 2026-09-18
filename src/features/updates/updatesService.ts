@@ -147,6 +147,7 @@ export async function runDownload(api: UpdatesApi, state: UpdateCenterState): Pr
   if (!canDownload(state)) return state; // لا تنزيل لغير OTA الجاهز
   try {
     const result = await api.fetchUpdateAsync();
+    if (!result.isNew) return { ...state, phase: 'error' };
     // expo-updates يفحص السلامة داخليًا ويرمي عند أي خلل — لا نصل لـready إلا بنجاح فعلي
     return { ...state, phase: 'ready-to-restart' };
   } catch {
