@@ -170,11 +170,17 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
             />
             <Field
               dark={dark}
-              label={`${tr('settings.aiKey')} ${settings.ai.hasApiKey ? '✓' : ''}`}
+              label={tr('settings.aiKey')}
               value={aiKey}
               onChangeText={setAiKey}
+              placeholder={settings.ai.hasApiKey ? 'محفوظ بأمان ✓' : ''}
               mono
             />
+            {settings.ai.hasApiKey ? (
+              <Text style={{ color: t.colors.success, fontSize: t.font.tiny }}>
+                محفوظ بأمان ✓
+              </Text>
+            ) : null}
             {aiKey.trim() ? (
               <Btn
                 dark={dark}

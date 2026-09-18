@@ -278,8 +278,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ai: {
     enabled: false,
     provider: 'openai-compatible',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    model: 'gemini-2.5-flash',
     hasApiKey: false,
     sendRedactedData: false,
   },

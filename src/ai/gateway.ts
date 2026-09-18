@@ -24,6 +24,7 @@ export type AiErrorKind =
   | 'network'
   | 'auth' // 401/403
   | 'server' // 5xx
+  | 'invalid_url' // 404
   | 'bad_response';
 
 export class AiError extends Error {
@@ -43,8 +44,29 @@ export const AI_ERROR_MESSAGES_AR: Record<AiErrorKind, string> = {
   network: 'تعذر الوصول إلى مزود الذكاء الاصطناعي (تحقق من الاتصال).',
   auth: 'مفتاح API مرفوض — تحقق من المفتاح في الإعدادات.',
   server: 'خطأ في خادم المزود — حاول لاحقًا.',
+  invalid_url: 'عنوان المزود أو المسار غير صحيح.',
   bad_response: 'استجابة غير متوقعة من المزود.',
 };
+
+/** تطبيع Base URL لمنع تكرار المسارات أو شرطات النهاية */
+export function normalizeBaseUrl(rawUrl: string): string {
+  let u = (rawUrl || '').trim();
+  if (!u) return '';
+  while (u.endsWith('/') || u.endsWith('/chat/completions')) {
+    if (u.endsWith('/chat/completions')) {
+      u = u.slice(0, -'/chat/completions'.length);
+    } else if (u.endsWith('/')) {
+      u = u.slice(0, -1);
+    }
+  }
+  return u;
+}
+
+/** بناء رابط endpoint الوحيد لـ chat completions */
+export function getChatCompletionsEndpoint(baseUrl: string): string {
+  const norm = normalizeBaseUrl(baseUrl);
+  return `${norm}/chat/completions`;
+}
 
 const SYSTEM_PROMPT = `You are TRACEWISE, a debugging assistant.
 Given a developer problem with evidence, return STRICT JSON only:
@@ -71,7 +93,8 @@ async function chatCompletion(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+    const endpoint = getChatCompletionsEndpoint(config.baseUrl);
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,6 +117,9 @@ async function chatCompletion(
     }
     if (res.status === 401 || res.status === 403) {
       throw new AiError('auth', AI_ERROR_MESSAGES_AR.auth);
+    }
+    if (res.status === 404) {
+      throw new AiError('invalid_url', AI_ERROR_MESSAGES_AR.invalid_url);
     }
     if (res.status >= 500) {
       throw new AiError('server', AI_ERROR_MESSAGES_AR.server);
@@ -135,7 +161,8 @@ export async function testConnection(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${config.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+    const endpoint = getChatCompletionsEndpoint(config.baseUrl);
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -150,6 +177,9 @@ export async function testConnection(
     });
     if (res.status === 401 || res.status === 403) {
       return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.auth };
+    }
+    if (res.status === 404) {
+      return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.invalid_url };
     }
     if (res.status === 429) {
       return { ok: false, messageAr: AI_ERROR_MESSAGES_AR.rate_limited };

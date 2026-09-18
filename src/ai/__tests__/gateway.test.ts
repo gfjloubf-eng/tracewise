@@ -1,7 +1,34 @@
-import { prepareOutbound, parseAiHypotheses, testConnection, analyzeWithAi, AiError } from '../gateway';
+import { prepareOutbound, parseAiHypotheses, testConnection, analyzeWithAi, AiError, normalizeBaseUrl, getChatCompletionsEndpoint } from '../gateway';
 
 describe('AI Gateway', () => {
   afterEach(() => jest.restoreAllMocks());
+
+  describe('URL Normalization', () => {
+    it('A: baseUrl = https://x.test/v1 -> https://x.test/v1/chat/completions', () => {
+      expect(normalizeBaseUrl('https://x.test/v1')).toBe('https://x.test/v1');
+      expect(getChatCompletionsEndpoint('https://x.test/v1')).toBe('https://x.test/v1/chat/completions');
+    });
+
+    it('B: baseUrl = https://x.test/v1/ -> https://x.test/v1/chat/completions', () => {
+      expect(normalizeBaseUrl('https://x.test/v1/')).toBe('https://x.test/v1');
+      expect(getChatCompletionsEndpoint('https://x.test/v1/')).toBe('https://x.test/v1/chat/completions');
+    });
+
+    it('C: baseUrl = https://x.test/v1/chat/completions -> https://x.test/v1/chat/completions', () => {
+      expect(normalizeBaseUrl('https://x.test/v1/chat/completions')).toBe('https://x.test/v1');
+      expect(getChatCompletionsEndpoint('https://x.test/v1/chat/completions')).toBe('https://x.test/v1/chat/completions');
+    });
+
+    it('D: Gemini: https://generativelanguage.googleapis.com/v1beta/openai/ -> https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', () => {
+      expect(normalizeBaseUrl('https://generativelanguage.googleapis.com/v1beta/openai/')).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
+      expect(getChatCompletionsEndpoint('https://generativelanguage.googleapis.com/v1beta/openai/')).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    });
+
+    it('E: Gemini مع endpoint كامل: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions -> https://generativelanguage.googleapis.com/v1beta/openai/chat/completions بدون تكرار', () => {
+      expect(normalizeBaseUrl('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
+      expect(getChatCompletionsEndpoint('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    });
+  });
 
   it('حارس الأسرار: رفض الطلب إذا بقي سر بعد الحجب (لا إرسال إطلاقًا)', () => {
     const spy = jest.spyOn(global, 'fetch');
@@ -33,6 +60,13 @@ describe('AI Gateway', () => {
     const r = await testConnection({ baseUrl: 'https://x.test/v1', model: 'm', apiKey: 'k' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.messageAr).toContain('مفتاح API');
+  });
+
+  it('testConnection: 404 → عنوان المزود أو المسار غير صحيح', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({ ok: false, status: 404 } as Response);
+    const r = await testConnection({ baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', model: 'm', apiKey: 'k' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.messageAr).toBe('عنوان المزود أو المسار غير صحيح.');
   });
 
   it('testConnection: 429 → رسالة حد الطلبات', async () => {
