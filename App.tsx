@@ -85,6 +85,7 @@ function TabsNavigator() {
             onSecurity={() => navigation.navigate('Security')}
             onMemory={() => navigation.navigate('Memory')}
             onProjects={() => navigation.navigate('Projects')}
+            onHistory={() => navigation.navigate('History')}
           />
         )}
       </Tabs.Screen>

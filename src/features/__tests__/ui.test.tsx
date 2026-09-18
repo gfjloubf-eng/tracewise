@@ -25,11 +25,15 @@ describe('HomeScreen', () => {
     const r = await wrap(
       <HomeScreen dark onOpenCase={noop} onNewCase={noop} onScan={noop} onSecurity={noop} onMemory={noop} />
     );
-    expect(r.getByText('أهلًا بك في TRACEWISE')).toBeTruthy();
+    // Hero بالهوية الجديدة + سؤال المطور
+    expect(r.getAllByText('TRACEWISE').length).toBeGreaterThan(0);
+    expect(r.getByText('ما المشكلة التي تريد حلها؟')).toBeTruthy();
     // الحالات التجريبية تُحمَّل من التخزين (mock) بعد البذر
     expect(await r.findByText('فشل تسجيل الدخول — HTTP 401')).toBeTruthy();
     expect(r.getByText('مشاكل مفتوحة')).toBeTruthy();
-    expect(r.getByText('مشكلة جديدة')).toBeTruthy();
+    expect(r.getByText('قيد التحليل')).toBeTruthy();
+    expect(r.getByText('مرجّح الحل')).toBeTruthy();
+    expect(r.getAllByText('مشكلة جديدة').length).toBeGreaterThan(0);
   });
 
   it('يعرض شارة البيانات التجريبية', async () => {
@@ -49,8 +53,8 @@ describe('تبديل اللغة — English بدون إعادة بناء', () =>
         </I18nProvider>
       </StoreProvider>
     );
-    expect(r.getByText('Welcome to TRACEWISE')).toBeTruthy();
-    expect(r.getByText('Open cases')).toBeTruthy();
+    expect(r.getAllByText('TRACEWISE').length).toBeGreaterThan(0);
+    expect(r.getByText('What problem do you want to solve?')).toBeTruthy();
     expect(r.getByText('Quick actions')).toBeTruthy();
     // عناوين الحالات بيانات (تبقى كما أدخلت) — الواجهة نفسها إنجليزية
     expect(await r.findByText('فشل تسجيل الدخول — HTTP 401')).toBeTruthy();

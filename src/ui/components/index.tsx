@@ -557,10 +557,16 @@ export function MonoText({ children, dark, small }: { children: React.ReactNode;
   return <Text selectable style={style}>{children}</Text>;
 }
 
+/**
+ * شعار TRACEWISE المركزي — الهوية: ‎</> → 💡‎
+ * (كود ← مشكلة ← تحليل ← حل) — مكوّن واحد لكل الشاشات: Splash/About/Home.
+ * واضح حتى بالحجم الصغير: رموز غليظة وتباين عالٍ.
+ */
 export function Logo({ size = 56, dark }: { size?: number; dark: boolean }) {
   const t = getTheme(dark);
   return (
     <View
+      accessibilityLabel="TRACEWISE"
       style={{
         width: size,
         height: size,
@@ -570,9 +576,34 @@ export function Logo({ size = 56, dark }: { size?: number; dark: boolean }) {
         borderColor: t.colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
+        flexDirection: 'row',
+        gap: size * 0.03,
       }}
     >
-      <Ionicons name="git-branch" size={size * 0.55} color={t.colors.accent} />
+      <Text
+        style={{
+          color: t.colors.accent,
+          fontSize: size * 0.3,
+          fontWeight: '800',
+          fontFamily: 'monospace',
+          writingDirection: 'ltr',
+          includeFontPadding: false,
+        }}
+      >
+        {'</>'}
+      </Text>
+      <Text
+        style={{
+          color: t.colors.textFaint,
+          fontSize: size * 0.24,
+          fontWeight: '700',
+          writingDirection: 'ltr',
+          includeFontPadding: false,
+        }}
+      >
+        {'→'}
+      </Text>
+      <Ionicons name="bulb" size={size * 0.28} color={t.colors.info} />
     </View>
   );
 }

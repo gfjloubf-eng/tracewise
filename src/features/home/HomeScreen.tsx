@@ -16,6 +16,7 @@ export function HomeScreen({
   onSecurity,
   onMemory,
   onProjects,
+  onHistory,
 }: {
   dark: boolean;
   onOpenCase: (id: string) => void;
@@ -24,18 +25,17 @@ export function HomeScreen({
   onSecurity: () => void;
   onMemory: () => void;
   onProjects?: () => void;
+  onHistory?: () => void;
 }) {
   const t = getTheme(dark);
   const { t: tr } = useI18n();
   const { cases, analyzingCaseId } = useStore();
 
-  // "مفتوحة" = كل ما لم يُوثّق حلّه بعد (مفتوحة/تحليل/خطة/مرجح)
-  const openCount = cases.filter((c) =>
-    ['open', 'analyzing', 'fix_plan', 'likely_resolved'].includes(c.state)
-  ).length;
-  const verifiedCount = cases.filter((c) =>
-    c.verifications.some((v) => v.result === 'verified')
-  ).length;
+  // إحصاءات حقيقية من الحالات الموجودة — لا أرقام وهمية
+  const openCount = cases.filter((c) => c.state === 'open' || c.state === 'fix_plan').length;
+  const analyzingCount = cases.filter((c) => c.state === 'analyzing').length;
+  const likelyCount = cases.filter((c) => c.state === 'likely_resolved').length;
+  const verifiedCount = cases.filter((c) => c.state === 'verified').length;
   const recent = [...cases]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 5);
@@ -44,12 +44,16 @@ export function HomeScreen({
 
   return (
     <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
-      {/* الترحيب */}
+      {/* Hero — الهوية + سؤال المطور */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing(3), marginTop: t.spacing(2) }}>
-        <Logo size={48} dark={dark} />
+        <Logo size={52} dark={dark} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: t.colors.text, fontSize: t.font.title, fontWeight: '800' }}>{tr('home.welcome')}</Text>
-          <Text style={{ color: t.colors.textMuted, fontSize: t.font.small }}>{tr('home.welcomeSub')}</Text>
+          <Text style={{ color: t.colors.text, fontSize: 26, fontWeight: '800', letterSpacing: 1.5, writingDirection: 'ltr' }}>
+            TRACEWISE
+          </Text>
+          <Text style={{ color: t.colors.accent, fontSize: t.font.small, fontWeight: '600' }}>
+            {tr('home.heroQuestion')}
+          </Text>
         </View>
       </View>
 
@@ -61,27 +65,42 @@ export function HomeScreen({
         </Card>
       )}
 
-      {/* الإحصاءات */}
-      <View style={{ flexDirection: 'row', gap: t.spacing(3) }}>
-        <StatCard dark={dark} icon="bug-outline" value={openCount} label={tr('home.openCases')} color={t.colors.info} />
-        <StatCard dark={dark} icon="checkmark-done-outline" value={verifiedCount} label={tr('home.verified')} color={t.colors.success} />
-        <StatCard dark={dark} icon="albums-outline" value={cases.length} label={tr('tab.history')} color={t.colors.accent} />
+      {/* الإحصاءات — أعداد حقيقية حسب الحالة */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing(3) }}>
+        <View style={{ flexGrow: 1, flexBasis: '44%' }}>
+          <StatCard dark={dark} icon="bug-outline" value={openCount} label={tr('home.openCases')} color={t.colors.info} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: '44%' }}>
+          <StatCard dark={dark} icon="analytics-outline" value={analyzingCount} label={tr('home.statAnalyzing')} color={t.colors.warning} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: '44%' }}>
+          <StatCard dark={dark} icon="help-circle-outline" value={likelyCount} label={tr('home.statLikely')} color={t.colors.accent} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: '44%' }}>
+          <StatCard dark={dark} icon="checkmark-done-outline" value={verifiedCount} label={tr('home.verified')} color={t.colors.success} />
+        </View>
       </View>
 
-      {/* زر المشكلة الجديدة */}
-      <Btn dark={dark} label={tr('home.newCase')} icon="add-circle-outline" onPress={onNewCase} />
+      {/* الزر الرئيسي — حالة تصحيح جديدة */}
+      <Btn dark={dark} label={`+ ${tr('home.newCase')}`} icon="add-circle-outline" onPress={onNewCase} />
 
       {/* إجراءات سريعة */}
       <SectionTitle dark={dark} text={tr('home.quickActions')} icon="flash-outline" />
-      <View style={{ flexDirection: 'row', gap: t.spacing(3) }}>
-        <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing(2) }}>
+        <View style={{ flexGrow: 1, flexBasis: '30%' }}>
+          <Btn dark={dark} variant="secondary" icon="add-circle-outline" label={tr('home.newCase')} onPress={onNewCase} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: '30%' }}>
           <Btn dark={dark} variant="secondary" icon="scan-outline" label={tr('home.scan')} onPress={onScan} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Btn dark={dark} variant="secondary" icon="shield-checkmark-outline" label={tr('home.security')} onPress={onSecurity} />
+        <View style={{ flexGrow: 1, flexBasis: '30%' }}>
+          <Btn dark={dark} variant="secondary" icon="albums-outline" label={tr('tab.history')} onPress={onHistory ?? (() => undefined)} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flexGrow: 1, flexBasis: '30%' }}>
           <Btn dark={dark} variant="secondary" icon="bulb-outline" label={tr('home.memory')} onPress={onMemory} />
+        </View>
+        <View style={{ flexGrow: 1, flexBasis: '30%' }}>
+          <Btn dark={dark} variant="secondary" icon="shield-checkmark-outline" label={tr('home.security')} onPress={onSecurity} />
         </View>
       </View>
 

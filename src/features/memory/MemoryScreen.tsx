@@ -17,13 +17,24 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
 
   const causes = useMemo(() => frequentCauses(cases), [cases]);
   const successful = useMemo(() => successfulFixes(cases), [cases]);
+
+  // تقنيات متكررة — مستخرجة من الحالات الفعلية فقط (لغة/إطار/منصة)
+  const technologies = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of cases) {
+      for (const tech of [c.language, c.framework, c.platform]) {
+        if (tech) counts.set(tech, (counts.get(tech) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [cases]);
   const selected = cases.find((c) => c.id === selectedId) ?? null;
   const similar = useMemo(
     () => (selected ? findSimilarCases(selected, cases) : []),
     [selected, cases]
   );
 
-  const hasMemory = causes.length > 0 || successful.length > 0;
+  const hasMemory = causes.length > 0 || successful.length > 0 || technologies.length > 0;
 
   return (
     <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
@@ -52,6 +63,31 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
               </View>
             ))}
           </Card>
+        </>
+      )}
+
+      {technologies.length > 0 && (
+        <>
+          <SectionTitle dark={dark} text={tr('memory.technologies')} icon="code-slash-outline" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {technologies.map(([name, count]) => (
+              <View
+                key={name}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: t.colors.chipBg,
+                  borderRadius: 999,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text style={{ color: t.colors.text, fontSize: t.font.small, fontWeight: '600' }}>{name}</Text>
+                <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>×{count}</Text>
+              </View>
+            ))}
+          </View>
         </>
       )}
 

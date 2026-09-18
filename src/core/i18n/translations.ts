@@ -41,6 +41,18 @@ export const ar: Dict = {
 
   // الترحيب
   'splash.loading': 'جارٍ تجهيز مساحة التشخيص…',
+  // الهوية والدعم — v3
+  'home.heroQuestion': 'ما المشكلة التي تريد حلها؟',
+  'home.statAnalyzing': 'قيد التحليل',
+  'home.statLikely': 'مرجّح الحل',
+  'support.title': 'فريق الدعم',
+  'support.name': 'عمار عادل المصوعي',
+  'support.whatsapp': 'تواصل عبر WhatsApp',
+  'support.copy': 'نسخ الرقم',
+  'support.copied': 'تم نسخ الرقم ✓',
+  'memory.technologies': 'تقنيات متكررة',
+  'about.version': 'الإصدار',
+
   'onboarding.skip': 'تخطي',
   'onboarding.start': 'ابدأ الآن',
   'onboarding.next': 'التالي',
@@ -444,6 +456,18 @@ export const en: Dict = {
   'tab.more': 'More',
 
   'splash.loading': 'Preparing your diagnosis workspace…',
+  // Identity & support — v3
+  'home.heroQuestion': 'What problem do you want to solve?',
+  'home.statAnalyzing': 'Analyzing',
+  'home.statLikely': 'Likely',
+  'support.title': 'Support team',
+  'support.name': 'Ammar Adel Al-Masawi',
+  'support.whatsapp': 'Contact via WhatsApp',
+  'support.copy': 'Copy number',
+  'support.copied': 'Number copied ✓',
+  'memory.technologies': 'Recurring technologies',
+  'about.version': 'Version',
+
   'onboarding.skip': 'Skip',
   'onboarding.start': 'Get started',
   'onboarding.next': 'Next',

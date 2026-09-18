@@ -20,7 +20,18 @@ export function SplashScreen({ dark, onDone }: { dark: boolean; onDone: () => vo
       <Text style={{ color: t.colors.text, fontSize: 32, fontWeight: '800', letterSpacing: 4 }}>TRACEWISE</Text>
       <Text style={{ color: t.colors.accent, fontSize: t.font.body, fontWeight: '600' }}>{tr('app.nameAr')} — {tr('app.subtitle')}</Text>
       <Text style={{ color: t.colors.textMuted, fontSize: t.font.small }}>«{tr('app.tagline')}»</Text>
-      <View style={{ height: t.spacing(4) }} />
+      <Text
+        style={{
+          color: t.colors.accent,
+          fontSize: t.font.tiny,
+          fontWeight: '700',
+          letterSpacing: 2.5,
+          writingDirection: 'ltr',
+        }}
+      >
+        DEBUG • SOLVE • LEARN • BUILD
+      </Text>
+      <View style={{ height: t.spacing(2) }} />
       <ActivityIndicator color={t.colors.primary} />
       <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>{tr('splash.loading')}</Text>
     </View>
