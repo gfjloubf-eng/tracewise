@@ -6,7 +6,8 @@ import React, { useState } from 'react';
 import { Alert, Image, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, Field, SectionTitle } from '../../ui/components';
+import { Btn, Card, Field } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { scanText } from '../../security/scanner';
@@ -131,7 +132,8 @@ export function ScannerScreen({
   };
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('scanner.title')}
       </Text>
@@ -168,7 +170,7 @@ export function ScannerScreen({
 
       {extracted && (
         <>
-          <SectionTitle dark={dark} text={tr('scanner.editable')} icon="create-outline" />
+          <SectionHeader dark={dark} title={tr('scanner.editable')} icon="create-outline" />
           <Field dark={dark} label={tr('scanner.errorMessage')} value={errorMessage} onChangeText={setErrorMessage} />
           <View style={{ flexDirection: 'row', gap: t.spacing(3) }}>
             <View style={{ flex: 2 }}>
@@ -191,7 +193,7 @@ export function ScannerScreen({
             disabled={!errorMessage && !rawText.trim()}
           />
 
-          <SectionTitle dark={dark} text={tr('scanner.pickCase')} />
+          <SectionHeader dark={dark} title={tr('scanner.pickCase')} />
           {cases.map((c) => (
             <Card
               key={c.id}
@@ -217,5 +219,6 @@ export function ScannerScreen({
         </>
       )}
     </View>
+    </TracewiseBackdrop>
   );
 }

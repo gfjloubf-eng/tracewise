@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, Field, SectionTitle } from '../../ui/components';
+import { Btn, Card, Field } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { githubClient, GITHUB_READ_PERMISSIONS_AR } from '../../integrations/github';
@@ -40,7 +41,8 @@ export function IntegrationsScreen({ dark, onBrowse }: { dark: boolean; onBrowse
   };
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('integrations.title')}
       </Text>
@@ -101,7 +103,7 @@ export function IntegrationsScreen({ dark, onBrowse }: { dark: boolean; onBrowse
         )}
       </Card>
 
-      <SectionTitle dark={dark} text={tr('integrations.readCaps')} icon="eye-outline" />
+      <SectionHeader dark={dark} title={tr('integrations.readCaps')} icon="eye-outline" />
       <Card dark={dark}>
         {GITHUB_READ_PERMISSIONS_AR.map((p, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -124,5 +126,6 @@ export function IntegrationsScreen({ dark, onBrowse }: { dark: boolean; onBrowse
         {tr('integrations.comingSoon')}
       </Text>
     </View>
+    </TracewiseBackdrop>
   );
 }

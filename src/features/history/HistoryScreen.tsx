@@ -2,7 +2,8 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { getTheme } from '../../core/theme';
-import { Chip, EmptyState, SectionTitle } from '../../ui/components';
+import { Chip } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { CaseCard } from '../../ui/components/CaseCard';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
@@ -44,7 +45,8 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
   }, [cases, query, state, severity, language, projectId]);
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('history.title')}
       </Text>
@@ -68,7 +70,7 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
 
       {projects.length > 0 && (
         <>
-          <SectionTitle dark={dark} text={tr('projects.title')} />
+          <SectionHeader dark={dark} title={tr('projects.title')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             <Chip dark={dark} label={tr('projects.mine')} active={projectId === 'all'} onPress={() => setProjectId('all')} />
             {projects.map((p) => (
@@ -78,7 +80,7 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
         </>
       )}
 
-      <SectionTitle dark={dark} text={tr('history.filterState')} />
+      <SectionHeader dark={dark} title={tr('history.filterState')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         <Chip dark={dark} label={tr('common.all')} active={state === 'all'} onPress={() => setState('all')} />
         {CASE_STATES_ORDER.map((s) => (
@@ -86,7 +88,7 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
         ))}
       </ScrollView>
 
-      <SectionTitle dark={dark} text={tr('history.filterSeverity')} />
+      <SectionHeader dark={dark} title={tr('history.filterSeverity')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         <Chip dark={dark} label={tr('common.all')} active={severity === 'all'} onPress={() => setSeverity('all')} />
         {SEVERITIES.map((s) => (
@@ -96,7 +98,7 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
 
       {languages.length > 0 && (
         <>
-          <SectionTitle dark={dark} text={tr('history.filterLanguage')} />
+          <SectionHeader dark={dark} title={tr('history.filterLanguage')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             <Chip dark={dark} label={tr('common.all')} active={language === 'all'} onPress={() => setLanguage('all')} />
             {languages.map((l) => (
@@ -111,10 +113,11 @@ export function HistoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase:
       </Text>
 
       {filtered.length === 0 ? (
-        <EmptyState dark={dark} icon="search-outline" title={tr('history.empty')} />
+        <TracewiseEmptyState dark={dark} icon="search-outline" title={tr('history.empty')} />
       ) : (
         filtered.map((c) => <CaseCard key={c.id} c={c} dark={dark} onPress={() => onOpenCase(c.id)} />)
       )}
     </View>
+    </TracewiseBackdrop>
   );
 }

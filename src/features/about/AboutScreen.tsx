@@ -5,7 +5,8 @@ import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, Logo, SectionTitle } from '../../ui/components';
+import { Btn, Card, Logo } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 
 const SUPPORT_WHATSAPP_URL = 'https://wa.me/967712275038';
@@ -32,7 +33,8 @@ export function AboutScreen({ dark }: { dark: boolean }) {
     copyTimerRef.current = setTimeout(() => setCopied(false), 2500);
   };
   return (
-    <View style={{ gap: t.spacing(4), padding: t.spacing(4), alignItems: 'center' }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(4), padding: t.spacing(4), alignItems: 'center' }}>
       <View style={{ height: t.spacing(6) }} />
       <Logo size={84} dark={dark} />
       <Text style={{ color: t.colors.text, fontSize: 28, fontWeight: '800', letterSpacing: 3 }}>TRACEWISE</Text>
@@ -53,7 +55,7 @@ export function AboutScreen({ dark }: { dark: boolean }) {
       </Card>
       {/* فريق الدعم */}
       <View style={{ alignSelf: 'stretch' }}>
-        <SectionTitle dark={dark} text={tr('support.title')} icon="headset-outline" />
+        <SectionHeader dark={dark} title={tr('support.title')} icon="headset-outline" />
         <Card dark={dark} style={{ gap: t.spacing(2) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View
@@ -96,5 +98,6 @@ export function AboutScreen({ dark }: { dark: boolean }) {
         {tr('about.version')} {appVersion}
       </Text>
     </View>
+    </TracewiseBackdrop>
   );
 }

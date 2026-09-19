@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, Chip, Field, SectionTitle, ToggleRow } from '../../ui/components';
+import { Btn, Card, Chip, Field, ToggleRow } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { testConnection } from '../../ai/gateway';
@@ -53,14 +54,15 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
   const hasDemo = cases.some((c) => c.isDemo);
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('settings.title')}
       </Text>
       <Btn dark={dark} variant="secondary" icon="cloud-download-outline" label={tr('updates.open')} onPress={onOpenUpdates ?? (() => undefined)} />
 
       {/* اللغة */}
-      <SectionTitle dark={dark} text={tr('settings.language')} icon="language-outline" />
+      <SectionHeader dark={dark} title={tr('settings.language')} icon="language-outline" />
       <Card dark={dark}>
         <View style={{ flexDirection: 'row', gap: t.spacing(2) }}>
           <Chip dark={dark} label={tr('settings.arabic')} active={lang === 'ar'} onPress={() => void updateSettings({ lang: 'ar' })} />
@@ -69,7 +71,7 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
       </Card>
 
       {/* المظهر */}
-      <SectionTitle dark={dark} text={tr('settings.appearance')} icon="color-palette-outline" />
+      <SectionHeader dark={dark} title={tr('settings.appearance')} icon="color-palette-outline" />
       <Card dark={dark}>
         <ToggleRow
           dark={dark}
@@ -80,7 +82,7 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
       </Card>
 
       {/* الخصوصية */}
-      <SectionTitle dark={dark} text={tr('settings.privacy')} icon="shield-checkmark-outline" />
+      <SectionHeader dark={dark} title={tr('settings.privacy')} icon="shield-checkmark-outline" />
       <Card dark={dark}>
         <ToggleRow
           dark={dark}
@@ -100,7 +102,7 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
       </Card>
 
       {/* AI */}
-      <SectionTitle dark={dark} text={tr('settings.ai')} icon="sparkles-outline" />
+      <SectionHeader dark={dark} title={tr('settings.ai')} icon="sparkles-outline" />
       <Card dark={dark} style={{ gap: t.spacing(3) }}>
         <ToggleRow
           dark={dark}
@@ -197,7 +199,7 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
       </Card>
 
       {/* البيانات */}
-      <SectionTitle dark={dark} text={tr('settings.data')} icon="save-outline" />
+      <SectionHeader dark={dark} title={tr('settings.data')} icon="save-outline" />
       <Card dark={dark} style={{ gap: t.spacing(3) }}>
         <Btn dark={dark} variant="secondary" icon="download-outline" label={tr('settings.export')} onPress={doExport} />
         <Btn dark={dark} variant="secondary" icon="cloud-upload-outline" label={tr('settings.import')} onPress={() => setShowImport(!showImport)} />
@@ -234,5 +236,6 @@ export function SettingsScreen({ dark, onOpenUpdates }: { dark: boolean; onOpenU
         <Btn dark={dark} variant="secondary" label={tr('common.cancel')} onPress={() => setConsentVisible(false)} />
       </BottomModal>
     </View>
+    </TracewiseBackdrop>
   );
 }

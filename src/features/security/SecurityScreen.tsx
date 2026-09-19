@@ -3,7 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, SectionTitle } from '../../ui/components';
+import { Btn, Card } from '../../ui/components';
+import { SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { GITHUB_READ_PERMISSIONS_AR } from '../../integrations/github';
@@ -34,12 +35,13 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
   };
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
       <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
         {tr('security.title')}
       </Text>
 
-      <SectionTitle dark={dark} text={tr('security.outbound')} icon="cloud-upload-outline" />
+      <SectionHeader dark={dark} title={tr('security.outbound')} icon="cloud-upload-outline" />
       <Card dark={dark}>
         {outbound.length === 0 ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -58,7 +60,7 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         )}
       </Card>
 
-      <SectionTitle dark={dark} text={tr('security.redacted')} icon="eye-off-outline" />
+      <SectionHeader dark={dark} title={tr('security.redacted')} icon="eye-off-outline" />
       <Card dark={dark}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Ionicons name="shield-checkmark" size={18} color={t.colors.accent} />
@@ -74,7 +76,7 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         </Text>
       </Card>
 
-      <SectionTitle dark={dark} text={tr('security.connections')} icon="wifi-outline" />
+      <SectionHeader dark={dark} title={tr('security.connections')} icon="wifi-outline" />
       <Card dark={dark}>
         {settings.github.connected ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -93,7 +95,7 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         )}
       </Card>
 
-      <SectionTitle dark={dark} text={tr('security.githubPerms')} icon="logo-github" />
+      <SectionHeader dark={dark} title={tr('security.githubPerms')} icon="logo-github" />
       <Card dark={dark}>
         {GITHUB_READ_PERMISSIONS_AR.map((p, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -106,7 +108,7 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         <Text style={{ color: t.colors.accent, fontSize: t.font.tiny, marginTop: 4 }}>{tr('security.githubReadOnly')}</Text>
       </Card>
 
-      <SectionTitle dark={dark} text={tr('security.lastScan')} icon="search-outline" />
+      <SectionHeader dark={dark} title={tr('security.lastScan')} icon="search-outline" />
       <Card dark={dark}>
         <Text style={{ color: t.colors.textMuted, fontSize: t.font.small }}>
           {lastScan ? new Date(lastScan.at).toLocaleString(lang === 'ar' ? 'ar' : 'en') : tr('security.never')}
@@ -119,7 +121,7 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         )}
       </Card>
 
-      <SectionTitle dark={dark} text={tr('security.log')} icon="list-outline" />
+      <SectionHeader dark={dark} title={tr('security.log')} icon="list-outline" />
       {securityLog.length === 0 ? (
         <Text style={{ color: t.colors.textFaint, fontSize: t.font.small }}>{tr('security.logEmpty')}</Text>
       ) : (
@@ -142,5 +144,6 @@ export function SecurityScreen({ dark }: { dark: boolean }) {
         ))
       )}
     </View>
+    </TracewiseBackdrop>
   );
 }
