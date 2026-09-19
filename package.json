@@ -1,0 +1,65 @@
+{
+  "name": "tracewise",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.18",
+    "@react-navigation/native": "^7.3.18",
+    "@react-navigation/native-stack": "^7.18.10",
+    "expo": "~57.0.22",
+    "expo-clipboard": "~57.0.2",
+    "expo-constants": "~57.0.18",
+    "expo-font": "~57.0.4",
+    "expo-image-picker": "~57.0.17",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.22",
+    "react": "19.2.3",
+    "react-dom": "^19.2.3",
+    "react-native": "0.86.3",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "^57.0.11",
+    "jest": "^30.5.1",
+    "jest-expo": "~57.0.5",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web --port 8081",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "apk": "node scripts/build-android.js",
+    "apk:release": "node scripts/build-android.js --release"
+  },
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+    ],
+    "moduleNameMapper": {
+      "^@expo/vector-icons$": "<rootDir>/test/mocks/vector-icons.tsx",
+      "^expo-secure-store$": "<rootDir>/test/mocks/secure-store.ts",
+      "^expo-image-picker$": "<rootDir>/test/mocks/image-picker.ts",
+      "^expo-clipboard$": "<rootDir>/test/mocks/clipboard.ts",
+      "^@react-native-async-storage/async-storage$": "<rootDir>/test/mocks/async-storage.ts"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/test/mocks/"
+    ]
+  }
+}
