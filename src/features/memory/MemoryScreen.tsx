@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
 import { Card, EmptyState, KeyValue, SectionTitle, StateBadge } from '../../ui/components';
+import { EvidenceChip } from '../../ui/tracewise';
 import { CaseCard } from '../../ui/components/CaseCard';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
@@ -71,21 +72,7 @@ export function MemoryScreen({ dark, onOpenCase }: { dark: boolean; onOpenCase: 
           <SectionTitle dark={dark} text={tr('memory.technologies')} icon="code-slash-outline" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {technologies.map(([name, count]) => (
-              <View
-                key={name}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  backgroundColor: t.colors.chipBg,
-                  borderRadius: 999,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                }}
-              >
-                <Text style={{ color: t.colors.text, fontSize: t.font.small, fontWeight: '600' }}>{name}</Text>
-                <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>×{count}</Text>
-              </View>
+              <EvidenceChip key={name} dark={dark} label={name} value={`×${count}`} mono />
             ))}
           </View>
         </>

@@ -1,8 +1,8 @@
 /** شاشة البداية — الشعار + تحميل أنيق */
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { getTheme } from '../../core/theme';
-import { Logo } from '../../ui/components';
+import { BrandLockup, TracewiseBackdrop, TracewiseLoadingState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 
 export function SplashScreen({ dark, onDone }: { dark: boolean; onDone: () => void }) {
@@ -15,25 +15,12 @@ export function SplashScreen({ dark, onDone }: { dark: boolean; onDone: () => vo
   }, [onDone]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.colors.bg, alignItems: 'center', justifyContent: 'center', gap: t.spacing(4) }}>
-      <Logo size={88} dark={dark} />
-      <Text style={{ color: t.colors.text, fontSize: 32, fontWeight: '800', letterSpacing: 4 }}>TRACEWISE</Text>
-      <Text style={{ color: t.colors.accent, fontSize: t.font.body, fontWeight: '600' }}>{tr('app.nameAr')} — {tr('app.subtitle')}</Text>
-      <Text style={{ color: t.colors.textMuted, fontSize: t.font.small }}>«{tr('app.tagline')}»</Text>
-      <Text
-        style={{
-          color: t.colors.accent,
-          fontSize: t.font.tiny,
-          fontWeight: '700',
-          letterSpacing: 2.5,
-          writingDirection: 'ltr',
-        }}
-      >
-        DEBUG • SOLVE • LEARN • BUILD
-      </Text>
-      <View style={{ height: t.spacing(2) }} />
-      <ActivityIndicator color={t.colors.primary} />
-      <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>{tr('splash.loading')}</Text>
-    </View>
+    <TracewiseBackdrop dark={dark}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: t.spacing(4) }}>
+        {/* الهوية الموحدة: الشعار + الاسم + الشعار اللفظي — منطق الإقلاع أعلاه لم يتغير */}
+        <BrandLockup dark={dark} />
+        <TracewiseLoadingState dark={dark} label={tr('splash.loading')} />
+      </View>
+    </TracewiseBackdrop>
   );
 }

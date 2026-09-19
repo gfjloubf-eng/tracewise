@@ -2,7 +2,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { getTheme } from '../../core/theme';
-import { Btn, Card, EmptyState, Logo, SectionTitle, StatCard } from '../../ui/components';
+import { Btn, Card, StatCard } from '../../ui/components';
+import { BrandLockup, SectionHeader, TracewiseBackdrop, TracewiseEmptyState } from '../../ui/tracewise';
 import { CaseCard } from '../../ui/components/CaseCard';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
@@ -43,14 +44,12 @@ export function HomeScreen({
   const hasDemo = cases.some((c) => c.isDemo);
 
   return (
-    <View style={{ gap: t.spacing(3), padding: t.spacing(4) }}>
-      {/* Hero — الهوية + سؤال المطور */}
+    <TracewiseBackdrop dark={dark}>
+    <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
+      {/* Hero — الهوية الموحدة + سؤال المطور */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing(3), marginTop: t.spacing(2) }}>
-        <Logo size={52} dark={dark} />
+        <BrandLockup dark={dark} compact />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: t.colors.text, fontSize: 26, fontWeight: '800', letterSpacing: 1.5, writingDirection: 'ltr' }}>
-            TRACEWISE
-          </Text>
           <Text style={{ color: t.colors.accent, fontSize: t.font.small, fontWeight: '600' }}>
             {tr('home.heroQuestion')}
           </Text>
@@ -85,7 +84,7 @@ export function HomeScreen({
       <Btn dark={dark} label={`+ ${tr('home.newCase')}`} icon="add-circle-outline" onPress={onNewCase} />
 
       {/* إجراءات سريعة */}
-      <SectionTitle dark={dark} text={tr('home.quickActions')} icon="flash-outline" />
+      <SectionHeader dark={dark} title={tr('home.quickActions')} icon="flash-outline" />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing(2) }}>
         <View style={{ flexGrow: 1, flexBasis: '30%' }}>
           <Btn dark={dark} variant="secondary" icon="add-circle-outline" label={tr('home.newCase')} onPress={onNewCase} />
@@ -105,9 +104,9 @@ export function HomeScreen({
       </View>
 
       {/* آخر الحالات */}
-      <SectionTitle dark={dark} text={tr('home.recent')} icon="time-outline" />
+      <SectionHeader dark={dark} title={tr('home.recent')} icon="time-outline" />
       {recent.length === 0 ? (
-        <EmptyState dark={dark} icon="file-tray-outline" title={tr('home.empty')} />
+        <TracewiseEmptyState dark={dark} icon="file-tray-outline" title={tr('home.empty')} />
       ) : (
         recent.map((c) => (
           <View key={c.id}>
@@ -132,5 +131,6 @@ export function HomeScreen({
         </Text>
       </Card>
     </View>
+    </TracewiseBackdrop>
   );
 }

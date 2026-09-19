@@ -3,7 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTheme } from '../../core/theme';
-import { BottomModal, Btn, Card, Chip, Field, KeyValue, SectionTitle, SeverityBadge, StateBadge } from '../../ui/components';
+import { BottomModal, Btn, Card, Chip, Field, KeyValue, SectionTitle, StateBadge } from '../../ui/components';
+import { JourneyRail, SeverityPill } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { buildTimeline, CHANGE_KIND_LABELS } from '../../domain/timeline';
@@ -77,7 +78,7 @@ export function JourneyTab({
       <Card dark={dark}>
         <View style={{ flexDirection: 'row', gap: t.spacing(2), flexWrap: 'wrap' }}>
           <StateBadge state={c.state} dark={dark} />
-          <SeverityBadge severity={c.severity} dark={dark} />
+          <SeverityPill severity={c.severity} dark={dark} />
           {c.isDemo && (
             <View style={{ backgroundColor: t.colors.warningDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
               <Text style={{ color: t.colors.warning, fontSize: t.font.tiny, fontWeight: '700' }}>{tr('case.demoBadge')}</Text>
@@ -129,29 +130,15 @@ export function JourneyTab({
       {/* رحلة التشخيص */}
       <Card dark={dark}>
         <Text style={{ color: t.colors.text, fontSize: t.font.body, fontWeight: '700' }}>{tr('journey.title')}</Text>
-        {steps.map((s, i) => {
-          const color = s.done ? t.colors.success : s.current ? t.colors.warning : t.colors.textFaint;
-          const icon = s.done ? 'checkmark-circle' : s.current ? 'radio-button-on' : 'ellipse-outline';
-          return (
-            <View key={s.key}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing(3), paddingVertical: 8 }}>
-                <Ionicons name={icon} size={22} color={color} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: s.done || s.current ? t.colors.text : t.colors.textFaint, fontSize: t.font.body, fontWeight: '600' }}>
-                    {tr(s.key)}
-                  </Text>
-                  <Text style={{ color: t.colors.textFaint, fontSize: t.font.tiny }}>
-                    {s.done ? tr('journey.done') : s.current ? tr('journey.current') : tr('journey.pending')}
-                  </Text>
-                </View>
-                <Ionicons name={s.icon} size={18} color={color} />
-              </View>
-              {i < steps.length - 1 && (
-                <View style={{ width: 2, height: 10, backgroundColor: t.colors.cardBorder, marginStart: 10 }} />
-              )}
-            </View>
-          );
-        })}
+        {/* JourneyRail — UI فقط؛ الحالات محسوبة أعلاه من بيانات الحالة الفعلية */}
+        <JourneyRail
+          dark={dark}
+          steps={steps.map((s) => ({
+            label: tr(s.key),
+            icon: s.icon,
+            status: s.done ? ('done' as const) : s.current ? ('current' as const) : ('pending' as const),
+          }))}
+        />
       </Card>
 
       {!hasDiag && (

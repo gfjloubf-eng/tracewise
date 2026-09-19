@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTheme } from '../../core/theme';
 import { AppHeader, BottomModal, Btn } from '../../ui/components';
+import { TracewiseErrorState } from '../../ui/tracewise';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { useStore } from '../../state/AppStore';
 import { CaseState } from '../../domain/types';
@@ -48,9 +49,7 @@ export function CaseDetailsScreen({
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.bg }}>
         <AppHeader title={tr('case.info')} dark={dark} onBack={onBack} />
-        <View style={{ padding: t.spacing(6) }}>
-          <Text style={{ color: t.colors.textMuted }}>{tr('common.error')}</Text>
-        </View>
+        <TracewiseErrorState dark={dark} title={tr('common.error')} message={tr('case.info')} onRetry={onBack} />
       </SafeAreaView>
     );
   }
