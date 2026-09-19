@@ -187,6 +187,9 @@ export function NewCaseScreen({
 
   return (
     <View style={{ flex: 1, gap: t.spacing(3), padding: t.spacing(4) }}>
+      <Text style={{ color: t.colors.text, fontSize: t.font.large, fontWeight: '800', marginTop: t.spacing(2) }}>
+        {tr('new.title')}
+      </Text>
       {/* مؤشر الخطوات */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing(2), marginTop: t.spacing(2) }}>
         {steps.map((s, i) => (

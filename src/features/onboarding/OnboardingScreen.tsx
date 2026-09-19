@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { FlatList, Text, useWindowDimensions, View } from 'react-native';
 import { getTheme } from '../../core/theme';
-import { Btn, Chip } from '../../ui/components';
+import { Btn, Chip, Logo } from '../../ui/components';
 import { useI18n } from '../../core/i18n/I18nProvider';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -41,20 +41,25 @@ export function OnboardingScreen({ dark, onFinish }: { dark: boolean; onFinish: 
         keyExtractor={(_, i) => String(i)}
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
         renderItem={({ item }) => (
-          <View style={{ width, paddingHorizontal: t.spacing(7), justifyContent: 'center', alignItems: 'center', gap: t.spacing(5) }}>
+          <View style={{ width, paddingHorizontal: t.spacing(7), justifyContent: 'center', alignItems: 'center', gap: t.spacing(4) }}>
+            <Logo size={64} dark={dark} />
+            <Text style={{ color: t.colors.accent, fontSize: t.font.tiny, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              DEBUG • SOLVE • LEARN • BUILD
+            </Text>
             <View
               style={{
-                width: 110,
-                height: 110,
-                borderRadius: 32,
+                width: 90,
+                height: 90,
+                borderRadius: 28,
                 backgroundColor: t.colors.primaryDim,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 1,
                 borderColor: t.colors.cardBorder,
+                marginTop: t.spacing(1),
               }}
             >
-              <Ionicons name={item.icon} size={52} color={t.colors.accent} />
+              <Ionicons name={item.icon} size={44} color={t.colors.accent} />
             </View>
             <Text style={{ color: t.colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}>
               {tr(item.titleKey)}
